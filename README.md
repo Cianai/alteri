@@ -22,18 +22,33 @@ This interactive tool allows side-by-side comparison of how different AI alignme
 ## Tech Stack
 
 - Next.js 14 with App Router
-- TypeScript
+- TypeScript (strict mode)
 - Tailwind CSS + shadcn/ui
-- Vercel AI SDK
+- Vercel AI SDK (@ai-sdk/anthropic)
+- assistant-ui for AI chat components
 - Claude API
 
 ## Project Structure
 
 ```
 alignment-comparator/
-├── docs/           # Project documentation
-├── src/            # Application source code
-├── LICENSE         # MIT License
+├── app/
+│   ├── page.tsx              # Main comparison interface
+│   ├── layout.tsx            # Root layout
+│   └── api/compare/route.ts  # Streaming API endpoint
+├── components/
+│   ├── scenario-input.tsx    # Text input + preset selector
+│   ├── framework-response.tsx # Single framework response
+│   ├── comparison-view.tsx   # Three-column layout
+│   ├── reasoning-trace.tsx   # Collapsible reasoning section
+│   ├── reflection-prompt.tsx # Buddhist ethics questions
+│   └── content-warning.tsx   # Initial consent modal
+├── lib/
+│   ├── prompts.ts            # System prompts for frameworks
+│   ├── scenarios.ts          # Preset scenario library
+│   ├── types.ts              # TypeScript interfaces
+│   └── utils.ts              # Shared utilities
+├── LICENSE
 └── README.md
 ```
 
@@ -41,13 +56,24 @@ alignment-comparator/
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Run development server
-npm run dev
+pnpm dev
 
 # Build for production
-npm run build
+pnpm build
+
+# Run linter
+pnpm lint
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and configure:
+
+```
+ANTHROPIC_API_KEY=your_api_key_here
 ```
 
 ## Licence
