@@ -1,106 +1,239 @@
 import { anthropic } from '@ai-sdk/anthropic'
 import { streamText } from 'ai'
 import type { NextRequest } from 'next/server'
+import { FRAMEWORK_PROMPTS } from '@/lib/prompts'
+import type { ComparisonRequest, FrameworkId } from '@/lib/types'
+import { isFrameworkId } from '@/lib/types'
 
 /**
  * API route for comparing AI responses across alignment frameworks.
  *
- * This endpoint accepts a mental health scenario and returns streaming
- * responses from three different AI alignment frameworks:
- * 1. HSI (Humanist Superintelligence) - Microsoft's approach
- * 2. Constitutional AI - Anthropic's approach
- * 3. Hybrid - Combined approach
+ * This endpoint accepts a mental health scenario and streams responses
+ * from multiple alignment frameworks in parallel using a multiplexed
+ * stream format.
  *
  * @module app/api/compare/route
  */
 
-// TODO: Import system prompts once implemented
-// import { HSI_PROMPT, CONSTITUTIONAL_PROMPT, HYBRID_PROMPT } from '@/lib/prompts'
-// import type { CompareRequest, FrameworkType } from '@/lib/types'
+/**
+ * Stream event types for the multiplexed response.
+ */
+type StreamEventType = 'delta' | 'done' | 'error'
 
 /**
- * Request body interface for the compare endpoint.
+ * Structure of a stream event sent to the client.
  */
-interface CompareRequestBody {
-  /** The mental health scenario to analyse */
-  scenario: string
-  /** Which framework to use for this request */
-  framework: 'hsi' | 'constitutional' | 'hybrid'
+interface StreamEvent {
+  framework: FrameworkId
+  type: StreamEventType
+  content: string
+  promptVersion?: string
+  error?: string
+}
+
+/**
+ * Validates the comparison request body.
+ *
+ * @param body - The request body to validate
+ * @returns Validated ComparisonRequest or error message
+ */
+function validateRequest(
+  body: unknown
+): { valid: true; data: ComparisonRequest } | { valid: false; error: string } {
+  if (!body || typeof body !== 'object') {
+    return { valid: false, error: 'Request body must be a JSON object' }
+  }
+
+  const { scenario, frameworks, scenarioId } = body as Record<string, unknown>
+
+  // Validate scenario
+  if (typeof scenario !== 'string' || scenario.trim().length === 0) {
+    return { valid: false, error: 'scenario must be a non-empty string' }
+  }
+
+  // Validate frameworks array
+  if (!Array.isArray(frameworks) || frameworks.length === 0) {
+    return {
+      valid: false,
+      error: 'frameworks must be a non-empty array of FrameworkId values',
+    }
+  }
+
+  for (const f of frameworks) {
+    if (typeof f !== 'string' || !isFrameworkId(f)) {
+      return {
+        valid: false,
+        error: `Invalid framework: ${f}. Must be one of: hsi, constitutional, hybrid`,
+      }
+    }
+  }
+
+  return {
+    valid: true,
+    data: {
+      scenario: scenario.trim(),
+      frameworks: frameworks as FrameworkId[],
+      scenarioId: typeof scenarioId === 'string' ? scenarioId : undefined,
+    },
+  }
+}
+
+/**
+ * Creates a JSON line for the stream.
+ */
+function createStreamLine(event: StreamEvent): string {
+  return JSON.stringify(event) + '\n'
 }
 
 /**
  * POST handler for the /api/compare endpoint.
  *
- * Accepts a scenario and framework type, then streams the AI response
- * using the appropriate system prompt.
+ * Accepts a scenario and array of frameworks, then streams AI responses
+ * from all frameworks in parallel using a multiplexed format.
  *
- * Implementation details:
- * - Uses Vercel AI SDK's streamText for efficient streaming
- * - Applies framework-specific system prompts
- * - Returns a streaming response compatible with assistant-ui
+ * Stream format (newline-delimited JSON):
+ * {"framework":"hsi","type":"delta","content":"I hear"}
+ * {"framework":"constitutional","type":"delta","content":"Thank you"}
+ * {"framework":"hsi","type":"done","content":"<full response>","promptVersion":"0.1.0"}
  *
- * TODO: Implement the following:
- * - [ ] Load system prompts from @/lib/prompts
- * - [ ] Add request validation with Zod
- * - [ ] Implement rate limiting
- * - [ ] Add error handling for API failures
- * - [ ] Track reasoning trace for transparency
- * - [ ] Add logging for research purposes
- *
- * @param request - The incoming request with scenario and framework
- * @returns Streaming text response from Claude
- *
- * @example
- * ```typescript
- * // Client-side usage with fetch
- * const response = await fetch('/api/compare', {
- *   method: 'POST',
- *   headers: { 'Content-Type': 'application/json' },
- *   body: JSON.stringify({
- *     scenario: 'A user expresses feelings of hopelessness...',
- *     framework: 'constitutional'
- *   })
- * })
- * ```
+ * @param request - The incoming request with scenario and frameworks
+ * @returns Streaming response with multiplexed framework responses
  */
 export async function POST(request: NextRequest) {
-  // TODO: Implement request parsing and validation
-  // const body = await request.json() as CompareRequestBody
-  // const { scenario, framework } = body
+  // TODO: Implement rate limiting
+  // For now, log request timestamp for monitoring
+  const requestTimestamp = new Date().toISOString()
+  console.log(`[${requestTimestamp}] Compare request received`)
 
-  // TODO: Select appropriate system prompt based on framework
-  // const systemPrompt = {
-  //   hsi: HSI_PROMPT,
-  //   constitutional: CONSTITUTIONAL_PROMPT,
-  //   hybrid: HYBRID_PROMPT,
-  // }[framework]
+  // Check for API key
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return new Response(
+      JSON.stringify({
+        error: 'Configuration error',
+        message:
+          'ANTHROPIC_API_KEY is not configured. Please add it to your .env.local file.',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
+  }
 
-  // TODO: Implement streaming response
-  // const result = streamText({
-  //   model: anthropic('claude-sonnet-4-20250514'),
-  //   system: systemPrompt,
-  //   messages: [
-  //     {
-  //       role: 'user',
-  //       content: `Please respond to this mental health scenario:\n\n${scenario}`
-  //     }
-  //   ],
-  // })
+  // Parse and validate request
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return new Response(
+      JSON.stringify({
+        error: 'Invalid JSON',
+        message: 'Request body must be valid JSON',
+      }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
+  }
 
-  // TODO: Return streaming response
-  // return result.toDataStreamResponse()
+  const validation = validateRequest(body)
+  if (!validation.valid) {
+    return new Response(
+      JSON.stringify({
+        error: 'Validation error',
+        message: validation.error,
+      }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
+  }
 
-  // Placeholder response until implementation is complete
-  return new Response(
-    JSON.stringify({
-      error: 'Not implemented',
-      message: 'TODO: Implement streaming AI comparison endpoint',
-    }),
-    {
-      status: 501,
-      headers: { 'Content-Type': 'application/json' },
-    }
-  )
+  const { scenario, frameworks } = validation.data
+
+  // Create multiplexed stream
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      // Track accumulated responses for each framework
+      const accumulatedResponses: Record<FrameworkId, string> = {
+        hsi: '',
+        constitutional: '',
+        hybrid: '',
+      }
+
+      // Create stream promises for all frameworks
+      const streamPromises = frameworks.map(async (frameworkId) => {
+        const config = FRAMEWORK_PROMPTS[frameworkId]
+
+        try {
+          const result = streamText({
+            model: anthropic('claude-sonnet-4-20250514'),
+            system: config.systemPrompt,
+            messages: [
+              {
+                role: 'user',
+                content: scenario,
+              },
+            ],
+          })
+
+          // Process the stream
+          for await (const chunk of result.textStream) {
+            accumulatedResponses[frameworkId] += chunk
+
+            const event: StreamEvent = {
+              framework: frameworkId,
+              type: 'delta',
+              content: chunk,
+            }
+            controller.enqueue(encoder.encode(createStreamLine(event)))
+          }
+
+          // Send completion event with full response
+          const doneEvent: StreamEvent = {
+            framework: frameworkId,
+            type: 'done',
+            content: accumulatedResponses[frameworkId],
+            promptVersion: config.version,
+          }
+          controller.enqueue(encoder.encode(createStreamLine(doneEvent)))
+        } catch (error) {
+          // Send error event for this framework without failing others
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error'
+          const errorEvent: StreamEvent = {
+            framework: frameworkId,
+            type: 'error',
+            content: '',
+            error: errorMessage,
+          }
+          controller.enqueue(encoder.encode(createStreamLine(errorEvent)))
+
+          console.error(
+            `[${requestTimestamp}] Error streaming ${frameworkId}:`,
+            errorMessage
+          )
+        }
+      })
+
+      // Wait for all streams to complete
+      await Promise.all(streamPromises)
+
+      // Close the stream
+      controller.close()
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/x-ndjson',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  })
 }
 
 /**

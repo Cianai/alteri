@@ -23,14 +23,33 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Formats a timestamp for display.
  *
- * TODO: Implement proper date formatting with Intl.DateTimeFormat
+ * Uses Intl.DateTimeFormat for localised, human-readable output.
  *
  * @param date - Date to format
+ * @param options - Optional formatting configuration
  * @returns Formatted date string
+ *
+ * @example
+ * ```ts
+ * formatTimestamp(new Date()) // '14 Jan 2026, 16:30'
+ * formatTimestamp(new Date(), { includeSeconds: true }) // '14 Jan 2026, 16:30:45'
+ * ```
  */
-export function formatTimestamp(date: Date): string {
-  // TODO: Implement proper formatting
-  return date.toISOString()
+export function formatTimestamp(
+  date: Date,
+  options?: { includeSeconds?: boolean; locale?: string }
+): string {
+  const locale = options?.locale ?? 'en-GB'
+  const formatOptions: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(options?.includeSeconds && { second: '2-digit' }),
+  }
+
+  return new Intl.DateTimeFormat(locale, formatOptions).format(date)
 }
 
 /**
@@ -97,4 +116,52 @@ export function safeJsonParse<T>(json: string, fallback: T): T {
   } catch {
     return fallback
   }
+}
+
+/**
+ * Parses a framework response to extract structured content.
+ *
+ * The system prompts instruct Claude to use <response> and <reasoning> tags.
+ * This function extracts content from those tags, falling back to the
+ * raw text if tags are not present.
+ *
+ * @param text - Raw response text from Claude
+ * @returns Parsed response and reasoning strings
+ *
+ * @example
+ * ```ts
+ * const { response, reasoning } = parseFrameworkResponse(rawText)
+ * ```
+ */
+export function parseFrameworkResponse(text: string): {
+  response: string
+  reasoning: string
+} {
+  const responseMatch = text.match(/<response>([\s\S]*?)<\/response>/)
+  const reasoningMatch = text.match(/<reasoning>([\s\S]*?)<\/reasoning>/)
+
+  return {
+    response: responseMatch?.[1]?.trim() ?? text.trim(),
+    reasoning: reasoningMatch?.[1]?.trim() ?? 'Reasoning not available',
+  }
+}
+
+/**
+ * Creates a unique comparison ID for tracking.
+ *
+ * Uses crypto.randomUUID when available, falls back to timestamp-based ID.
+ *
+ * @returns Unique identifier string
+ *
+ * @example
+ * ```ts
+ * const id = createComparisonId() // 'cmp_550e8400-e29b-41d4-a716-446655440000'
+ * ```
+ */
+export function createComparisonId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `cmp_${crypto.randomUUID()}`
+  }
+  // Fallback for environments without crypto.randomUUID
+  return `cmp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 }
