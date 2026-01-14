@@ -4,8 +4,7 @@ import { cn } from '@/lib/utils'
 /**
  * Textarea component props interface.
  */
-export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>
 
 /**
  * Textarea component for multi-line text input.

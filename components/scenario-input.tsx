@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getScenariosByCategory, getAllScenarios } from '@/lib/scenarios'
+import { getScenariosByCategory } from '@/lib/scenarios'
 import type { Scenario, ScenarioCategory } from '@/lib/types'
 import { AlertTriangle, Send } from 'lucide-react'
 

@@ -1,5 +1,13 @@
 'use client'
 
+import * as React from 'react'
+import { ContentWarning, useContentWarningAcknowledged } from '@/components/content-warning'
+import { ScenarioInput } from '@/components/scenario-input'
+import { ComparisonView, type FrameworkResponseState } from '@/components/comparison-view'
+import { ReflectionPrompt } from '@/components/reflection-prompt'
+import { parseFrameworkResponse } from '@/lib/utils'
+import type { FrameworkId } from '@/lib/types'
+
 /**
  * Main comparison interface page.
  *
@@ -9,18 +17,39 @@
  * 2. Anthropic Constitutional AI
  * 3. Hybrid approach combining both frameworks
  *
+ * Features:
+ * - Content warning modal with consent flow
+ * - Scenario input via presets or custom text
+ * - Parallel streaming responses from three frameworks
+ * - Per-framework error handling and retry
+ * - Buddhist ethics reflection prompts
+ *
  * @module app/page
  */
 
-// TODO: Import components once implemented
-// import { ContentWarning } from '@/components/content-warning'
-// import { ScenarioInput } from '@/components/scenario-input'
-// import { ComparisonView } from '@/components/comparison-view'
-// import { ReflectionPrompt } from '@/components/reflection-prompt'
+/**
+ * Stream message types from the /api/compare endpoint.
+ */
+interface StreamMessage {
+  framework: FrameworkId
+  type: 'delta' | 'done' | 'error'
+  content: string
+  promptVersion?: string
+  tokenCount?: number
+  error?: string
+}
 
-// TODO: Import hooks and state management
-// import { useState } from 'react'
-// import { useChat } from 'ai/react'
+/**
+ * Initial state for framework responses.
+ */
+const initialResponseState: FrameworkResponseState = {
+  content: undefined,
+  isStreaming: false,
+  reasoningTrace: undefined,
+  error: undefined,
+  promptVersion: undefined,
+  tokenCount: undefined,
+}
 
 /**
  * HomePage component - Main comparison interface.
@@ -28,36 +57,291 @@
  * Responsibilities:
  * - Display content warning modal on first visit
  * - Provide scenario input (custom text or presets)
- * - Trigger parallel API calls to three framework endpoints
+ * - Trigger parallel API calls to the comparison endpoint
  * - Display streaming responses in three-column comparison view
  * - Show reflection prompts after responses complete
- *
- * State management:
- * - hasAcceptedWarning: boolean - Track consent modal dismissal
- * - currentScenario: string - User's input scenario
- * - isComparing: boolean - Loading state during API calls
- * - responses: FrameworkResponse[] - Responses from each framework
  *
  * @returns The main comparison interface
  */
 export default function HomePage() {
-  // TODO: Implement state management
-  // const [hasAcceptedWarning, setHasAcceptedWarning] = useState(false)
-  // const [currentScenario, setCurrentScenario] = useState('')
+  // Content warning acknowledgement state (persisted in localStorage)
+  const hasAcknowledged = useContentWarningAcknowledged()
+  const [showWarning, setShowWarning] = React.useState(!hasAcknowledged)
 
-  // TODO: Implement comparison logic
-  // const handleCompare = async (scenario: string) => {
-  //   // Trigger parallel API calls to /api/compare
-  //   // Update responses state as streams arrive
-  // }
+  // Scenario state
+  const [currentScenario, setCurrentScenario] = React.useState('')
+  const [currentScenarioId, setCurrentScenarioId] = React.useState<string | undefined>()
+
+  // Framework response states
+  const [hsiResponse, setHsiResponse] = React.useState<FrameworkResponseState>(initialResponseState)
+  const [constitutionalResponse, setConstitutionalResponse] = React.useState<FrameworkResponseState>(initialResponseState)
+  const [hybridResponse, setHybridResponse] = React.useState<FrameworkResponseState>(initialResponseState)
+
+  // Global loading state
+  const [isComparing, setIsComparing] = React.useState(false)
+
+  // Update show warning when acknowledgement changes
+  React.useEffect(() => {
+    setShowWarning(!hasAcknowledged)
+  }, [hasAcknowledged])
+
+  /**
+   * Get the state setter for a given framework.
+   */
+  const getResponseSetter = React.useCallback((framework: FrameworkId) => {
+    switch (framework) {
+      case 'hsi':
+        return setHsiResponse
+      case 'constitutional':
+        return setConstitutionalResponse
+      case 'hybrid':
+        return setHybridResponse
+    }
+  }, [])
+
+  /**
+   * Process a stream message and update the appropriate framework state.
+   */
+  const processStreamMessage = React.useCallback((message: StreamMessage) => {
+    const setter = getResponseSetter(message.framework)
+
+    switch (message.type) {
+      case 'delta':
+        setter((prev) => ({
+          ...prev,
+          content: (prev.content ?? '') + message.content,
+          isStreaming: true,
+        }))
+        break
+
+      case 'done':
+        // Parse response to extract reasoning trace
+        const { response, reasoning } = parseFrameworkResponse(message.content)
+        setter({
+          content: response,
+          isStreaming: false,
+          reasoningTrace: reasoning,
+          error: undefined,
+          promptVersion: message.promptVersion,
+          tokenCount: message.tokenCount,
+        })
+        break
+
+      case 'error':
+        setter((prev) => ({
+          ...prev,
+          isStreaming: false,
+          error: message.error ?? 'An unknown error occurred',
+        }))
+        break
+    }
+  }, [getResponseSetter])
+
+  /**
+   * Handle scenario submission - initiates parallel framework comparison.
+   */
+  const handleSubmit = React.useCallback(async (scenario: string, scenarioId?: string) => {
+    // Update scenario state
+    setCurrentScenario(scenario)
+    setCurrentScenarioId(scenarioId)
+    setIsComparing(true)
+
+    // Reset all framework states to streaming
+    const streamingState: FrameworkResponseState = {
+      content: '',
+      isStreaming: true,
+      reasoningTrace: undefined,
+      error: undefined,
+      promptVersion: undefined,
+      tokenCount: undefined,
+    }
+    setHsiResponse(streamingState)
+    setConstitutionalResponse(streamingState)
+    setHybridResponse(streamingState)
+
+    try {
+      const response = await fetch('/api/compare', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scenario,
+          scenarioId,
+          frameworks: ['hsi', 'constitutional', 'hybrid'] as FrameworkId[],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || `HTTP ${response.status}`)
+      }
+
+      if (!response.body) {
+        throw new Error('No response body received')
+      }
+
+      // Consume the multiplexed NDJSON stream
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          break
+        }
+
+        // Decode chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true })
+
+        // Process complete lines
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? '' // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const message = JSON.parse(line) as StreamMessage
+              processStreamMessage(message)
+            } catch (parseError) {
+              console.error('Failed to parse stream message:', line, parseError)
+            }
+          }
+        }
+      }
+
+      // Process any remaining content in buffer
+      if (buffer.trim()) {
+        try {
+          const message = JSON.parse(buffer) as StreamMessage
+          processStreamMessage(message)
+        } catch (parseError) {
+          console.error('Failed to parse final buffer:', buffer, parseError)
+        }
+      }
+    } catch (error) {
+      // Set error state for all frameworks
+      const errorMessage = error instanceof Error ? error.message : 'Failed to compare frameworks'
+      setHsiResponse((prev) => ({ ...prev, isStreaming: false, error: prev.content ? undefined : errorMessage }))
+      setConstitutionalResponse((prev) => ({ ...prev, isStreaming: false, error: prev.content ? undefined : errorMessage }))
+      setHybridResponse((prev) => ({ ...prev, isStreaming: false, error: prev.content ? undefined : errorMessage }))
+    } finally {
+      setIsComparing(false)
+    }
+  }, [processStreamMessage])
+
+  /**
+   * Handle regeneration of a single framework's response.
+   */
+  const handleRegenerate = React.useCallback(async (framework: FrameworkId) => {
+    if (!currentScenario) return
+
+    const setter = getResponseSetter(framework)
+
+    // Reset this framework to streaming state
+    setter({
+      content: '',
+      isStreaming: true,
+      reasoningTrace: undefined,
+      error: undefined,
+      promptVersion: undefined,
+      tokenCount: undefined,
+    })
+
+    try {
+      const response = await fetch('/api/compare', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scenario: currentScenario,
+          scenarioId: currentScenarioId,
+          frameworks: [framework],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || `HTTP ${response.status}`)
+      }
+
+      if (!response.body) {
+        throw new Error('No response body received')
+      }
+
+      // Consume stream for single framework
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          break
+        }
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const message = JSON.parse(line) as StreamMessage
+              processStreamMessage(message)
+            } catch (parseError) {
+              console.error('Failed to parse stream message:', parseError)
+            }
+          }
+        }
+      }
+
+      if (buffer.trim()) {
+        try {
+          const message = JSON.parse(buffer) as StreamMessage
+          processStreamMessage(message)
+        } catch (parseError) {
+          console.error('Failed to parse final buffer:', parseError)
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to regenerate response'
+      setter((prev) => ({
+        ...prev,
+        isStreaming: false,
+        error: errorMessage,
+      }))
+    }
+  }, [currentScenario, currentScenarioId, getResponseSetter, processStreamMessage])
+
+  /**
+   * Handle reflection submission (for future analytics).
+   */
+  const handleReflectionSubmit = React.useCallback((reflection: string) => {
+    // Future: Send to analytics endpoint
+    console.log('Reflection submitted:', reflection.substring(0, 100) + '...')
+  }, [])
+
+  // Check if all responses are complete (for showing reflection prompt)
+  const responsesComplete =
+    !hsiResponse.isStreaming &&
+    !constitutionalResponse.isStreaming &&
+    !hybridResponse.isStreaming &&
+    (hsiResponse.content || hsiResponse.error) &&
+    (constitutionalResponse.content || constitutionalResponse.error) &&
+    (hybridResponse.content || hybridResponse.error)
+
+  // Show content warning if not acknowledged
+  if (showWarning) {
+    return <ContentWarning onAcknowledge={() => setShowWarning(false)} />
+  }
 
   return (
     <main className="min-h-screen bg-background">
-      {/* TODO: Add ContentWarning modal */}
-      {/* {!hasAcceptedWarning && (
-        <ContentWarning onAccept={() => setHasAcceptedWarning(true)} />
-      )} */}
-
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="mb-8 text-center">
@@ -69,63 +353,39 @@ export default function HomePage() {
           </p>
         </header>
 
-        {/* TODO: Add ScenarioInput component */}
+        {/* Scenario Input */}
         <section className="mb-8">
-          <div className="rounded-lg border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold">Enter a Scenario</h2>
-            <p className="text-sm text-muted-foreground">
-              TODO: Implement ScenarioInput component with text input and preset selector
-            </p>
-          </div>
+          <ScenarioInput
+            onSubmit={handleSubmit}
+            isLoading={isComparing}
+            initialValue={currentScenario}
+          />
         </section>
 
-        {/* TODO: Add ComparisonView component */}
-        <section className="mb-8">
-          <div className="grid gap-4 md:grid-cols-3">
-            {/* HSI Column */}
-            <div className="rounded-lg border bg-card p-4">
-              <div className="mb-2 flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-hsi" />
-                <h3 className="font-semibold">Microsoft HSI</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                TODO: Implement FrameworkResponse component
-              </p>
-            </div>
+        {/* Comparison View - Only show after submission */}
+        {currentScenario && (
+          <section className="mb-8">
+            <ComparisonView
+              scenario={currentScenario}
+              scenarioId={currentScenarioId}
+              hsiResponse={hsiResponse}
+              constitutionalResponse={constitutionalResponse}
+              hybridResponse={hybridResponse}
+              onRegenerate={handleRegenerate}
+            />
+          </section>
+        )}
 
-            {/* Constitutional AI Column */}
-            <div className="rounded-lg border bg-card p-4">
-              <div className="mb-2 flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-constitutional" />
-                <h3 className="font-semibold">Constitutional AI</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                TODO: Implement FrameworkResponse component
-              </p>
-            </div>
-
-            {/* Hybrid Column */}
-            <div className="rounded-lg border bg-card p-4">
-              <div className="mb-2 flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-hybrid" />
-                <h3 className="font-semibold">Hybrid Approach</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                TODO: Implement FrameworkResponse component
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* TODO: Add ReflectionPrompt component */}
-        <section>
-          <div className="rounded-lg border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold">Reflection</h2>
-            <p className="text-sm text-muted-foreground">
-              TODO: Implement ReflectionPrompt component with Buddhist ethics questions
-            </p>
-          </div>
-        </section>
+        {/* Reflection Prompt - Only show after all responses complete */}
+        {currentScenario && responsesComplete && (
+          <section className="mb-8">
+            <ReflectionPrompt
+              scenario={currentScenario}
+              responsesComplete={!!responsesComplete}
+              onReflectionSubmit={handleReflectionSubmit}
+            />
+          </section>
+        )}
       </div>
 
       {/* Footer */}

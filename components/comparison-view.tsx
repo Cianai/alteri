@@ -5,7 +5,7 @@ import { FrameworkResponse } from '@/components/framework-response'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { FrameworkId, FrameworkResponse as FrameworkResponseType } from '@/lib/types'
+import type { FrameworkId } from '@/lib/types'
 import { Maximize2, Minimize2, Download } from 'lucide-react'
 
 /**

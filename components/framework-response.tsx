@@ -5,13 +5,12 @@ import {
   AssistantRuntimeProvider,
   ThreadPrimitive,
   MessagePrimitive,
-  ContentPartPrimitive,
   useLocalRuntime,
   type ChatModelAdapter,
 } from '@assistant-ui/react'
 import { Badge } from '@/components/ui/badge'
 import { ReasoningTrace } from '@/components/reasoning-trace'
-import type { FrameworkId, FrameworkResponse as FrameworkResponseType } from '@/lib/types'
+import type { FrameworkId } from '@/lib/types'
 import { FRAMEWORK_PROMPTS } from '@/lib/prompts'
 import { Copy, Check, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -249,6 +248,7 @@ export function StreamingFrameworkResponse({
             <ThreadPrimitive.Viewport className="flex flex-col gap-4">
               <ThreadPrimitive.Messages
                 components={{
+                  UserMessage: () => null,
                   AssistantMessage: () => (
                     <MessagePrimitive.Root>
                       <MessagePrimitive.Content

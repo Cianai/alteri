@@ -163,12 +163,12 @@ function QuestionCategory({ category, isOpen, onToggle }: QuestionCategoryProps)
  * ```
  */
 export function ReflectionPrompt({
-  scenario,
+  scenario: _scenario,
   responsesComplete,
   onReflectionSubmit,
 }: ReflectionPromptProps) {
   const [openCategories, setOpenCategories] = React.useState<Set<ReflectionCategory>>(
-    new Set(['attention'])
+    () => new Set<ReflectionCategory>(['attention'])
   )
   const [reflection, setReflection] = React.useState('')
   const [isSubmitted, setIsSubmitted] = React.useState(false)
