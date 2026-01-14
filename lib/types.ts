@@ -14,34 +14,22 @@
 /**
  * The three AI alignment frameworks being compared.
  */
-export type FrameworkType = 'hsi' | 'constitutional' | 'hybrid'
-
-/**
- * Display information for each framework.
- */
-export interface FrameworkConfig {
-  /** Short identifier */
-  id: FrameworkType
-  /** Display name */
-  name: string
-  /** Full descriptive name */
-  fullName: string
-  /** Brief description of the approach */
-  description: string
-  /** Tailwind CSS colour class */
-  colorClass: string
-  /** Key principles this framework embodies */
-  principles: string[]
-}
-
-// =============================================================================
-// Scenario Types
-// =============================================================================
+export type FrameworkId = 'hsi' | 'constitutional' | 'hybrid'
 
 /**
  * Categories for preset scenarios.
  */
-export type ScenarioCategory = 'crisis' | 'ambiguous' | 'boundary' | 'extended'
+export type ScenarioCategory =
+  | 'crisis-explicit'
+  | 'crisis-indirect'
+  | 'ambiguous'
+  | 'boundary'
+  | 'extended'
+  | 'information'
+
+// =============================================================================
+// Scenario Types
+// =============================================================================
 
 /**
  * A mental health scenario for comparison.
@@ -51,16 +39,69 @@ export interface Scenario {
   id: string
   /** Short title for the scenario */
   title: string
-  /** Full scenario content */
+  /** Brief description of the scenario */
+  description: string
+  /** Full scenario content (user message) */
   content: string
   /** Category classification */
   category: ScenarioCategory
-  /** Brief description of why this scenario is interesting */
-  rationale?: string
-  /** Course readings relevant to this scenario */
-  courseReferences?: string[]
-  /** Version for tracking prompt evolution */
+  /** Content warning for sensitive material */
+  contentWarning: string
+}
+
+// =============================================================================
+// Framework Prompt Types
+// =============================================================================
+
+/**
+ * Framework prompt configuration with styling and system prompt.
+ */
+export interface FrameworkPrompt {
+  /** Framework identifier */
+  id: FrameworkId
+  /** Full display name */
+  name: string
+  /** Abbreviated name for UI */
+  shortName: string
+  /** Brief description of the approach */
+  description: string
+  /** Version identifier for prompt tracking */
   version: string
+  /** The system prompt content */
+  systemPrompt: string
+  /** Tailwind colour classes for theming */
+  colour: {
+    /** Background colour class */
+    primary: string
+    /** Text colour class */
+    secondary: string
+    /** Border colour class */
+    border: string
+  }
+}
+
+// =============================================================================
+// Response Types
+// =============================================================================
+
+/**
+ * Response from a single framework.
+ */
+export interface FrameworkResponse {
+  /** The framework that generated this response */
+  framework: FrameworkId
+  /** Display name of the framework */
+  frameworkName: string
+  /** The generated response content */
+  response: string
+  /** Reasoning trace for transparency */
+  reasoningTrace: string
+  /** Version of prompt used */
+  promptVersion: string
+  /** When the response was generated */
+  generatedAt: Date
+  /** Token count for research purposes */
+  tokenCount?: number
 }
 
 // =============================================================================
@@ -70,74 +111,29 @@ export interface Scenario {
 /**
  * Request body for the /api/compare endpoint.
  */
-export interface CompareRequest {
-  /** The scenario to analyse */
+export interface ComparisonRequest {
+  /** The scenario text to analyse */
   scenario: string
-  /** Which framework to use */
-  framework: FrameworkType
-  /** Optional session ID for tracking */
-  sessionId?: string
+  /** Optional preset scenario ID */
+  scenarioId?: string
+  /** Which frameworks to use */
+  frameworks: FrameworkId[]
 }
 
 /**
- * Response from a single framework.
- */
-export interface FrameworkResponse {
-  /** The framework that generated this response */
-  framework: FrameworkType
-  /** The generated response content */
-  content: string
-  /** Whether the response is still streaming */
-  isStreaming: boolean
-  /** Reasoning trace steps for transparency */
-  reasoningTrace?: string[]
-  /** Error message if the request failed */
-  error?: string
-  /** Response generation time in milliseconds */
-  responseTimeMs?: number
-  /** Token count for research purposes */
-  tokenCount?: {
-    input: number
-    output: number
-  }
-}
-
-/**
- * Complete comparison result across all frameworks.
+ * Complete comparison result across frameworks.
  */
 export interface ComparisonResult {
   /** Unique comparison ID */
   id: string
   /** The scenario being compared */
   scenario: string
-  /** Timestamp of the comparison */
-  timestamp: Date
-  /** Response from HSI framework */
-  hsi: FrameworkResponse
-  /** Response from Constitutional AI */
-  constitutional: FrameworkResponse
-  /** Response from Hybrid approach */
-  hybrid: FrameworkResponse
-}
-
-// =============================================================================
-// System Prompt Types
-// =============================================================================
-
-/**
- * System prompt with version tracking.
- */
-export interface SystemPrompt {
-  /** Which framework this prompt is for */
-  framework: FrameworkType
-  /** The system prompt content */
-  content: string
-  /** Version identifier */
-  version: string
-  /** When this version was created */
-  createdAt: Date
-  /** Brief description of changes from previous version */
-  changelog?: string
+  /** Optional preset scenario ID */
+  scenarioId?: string
+  /** Responses from each requested framework */
+  responses: FrameworkResponse[]
+  /** When the comparison was generated */
+  generatedAt: Date
 }
 
 // =============================================================================
@@ -145,76 +141,27 @@ export interface SystemPrompt {
 // =============================================================================
 
 /**
- * Categories of reflection questions.
+ * A reflection question for Buddhist ethics integration.
  */
-export type ReflectionCategory =
-  | 'attention'
-  | 'relational'
-  | 'compassion'
-  | 'boundaries'
-
-/**
- * A reflection question set.
- */
-export interface ReflectionQuestionSet {
-  /** Category of questions */
-  category: ReflectionCategory
-  /** Display title */
-  title: string
-  /** Questions to prompt reflection */
-  questions: string[]
-  /** Reference to course readings */
-  courseReference: string
-}
-
-/**
- * User's saved reflection.
- */
-export interface UserReflection {
-  /** Unique ID */
+export interface ReflectionQuestion {
+  /** Unique identifier */
   id: string
-  /** Comparison this reflection is about */
-  comparisonId: string
-  /** The reflection category */
-  category: ReflectionCategory
-  /** User's written reflection */
-  content: string
-  /** When the reflection was created */
-  createdAt: Date
+  /** The reflection question */
+  question: string
+  /** Which framework this question focuses on, or 'comparative' for cross-framework */
+  frameworkFocus?: FrameworkId | 'comparative'
+  /** Buddhist concept this question relates to */
+  buddhistConcept: string
 }
 
 // =============================================================================
-// UI State Types
+// Type Guards
 // =============================================================================
 
 /**
- * Application state for the comparison interface.
+ * Type guard to check if a string is a valid FrameworkId.
  */
-export interface ComparisonState {
-  /** Current scenario text */
-  scenario: string
-  /** Whether user has accepted content warning */
-  hasAcceptedWarning: boolean
-  /** Whether comparison is in progress */
-  isComparing: boolean
-  /** Current responses from each framework */
-  responses: {
-    hsi: FrameworkResponse | null
-    constitutional: FrameworkResponse | null
-    hybrid: FrameworkResponse | null
-  }
-  /** History of comparisons in this session */
-  comparisonHistory: ComparisonResult[]
-}
-
-// =============================================================================
-// Export Helpers
-// =============================================================================
-
-/**
- * Type guard to check if a string is a valid FrameworkType.
- */
-export function isFrameworkType(value: string): value is FrameworkType {
+export function isFrameworkId(value: string): value is FrameworkId {
   return ['hsi', 'constitutional', 'hybrid'].includes(value)
 }
 
@@ -222,5 +169,12 @@ export function isFrameworkType(value: string): value is FrameworkType {
  * Type guard to check if a string is a valid ScenarioCategory.
  */
 export function isScenarioCategory(value: string): value is ScenarioCategory {
-  return ['crisis', 'ambiguous', 'boundary', 'extended'].includes(value)
+  return [
+    'crisis-explicit',
+    'crisis-indirect',
+    'ambiguous',
+    'boundary',
+    'extended',
+    'information',
+  ].includes(value)
 }
