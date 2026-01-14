@@ -1,59 +1,71 @@
 'use client'
 
 import * as React from 'react'
-// TODO: Uncomment imports when Radix components are available
-// import * as Collapsible from '@radix-ui/react-collapsible'
-// import { ChevronDown, ChevronRight } from 'lucide-react'
-// import { Button } from '@/components/ui/button'
-// import type { FrameworkType } from '@/lib/types'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ChevronDown, ChevronRight, Copy, Check } from 'lucide-react'
+import type { FrameworkId } from '@/lib/types'
+import { FRAMEWORK_PROMPTS } from '@/lib/prompts'
 
 /**
  * Props for the ReasoningTrace component.
  */
 export interface ReasoningTraceProps {
   /** Which framework this reasoning trace belongs to */
-  framework: 'hsi' | 'constitutional' | 'hybrid'
-  /** Array of reasoning steps from the AI's decision process */
-  steps: string[]
+  framework: FrameworkId
+  /** Reasoning trace string from the model (may contain XML tags) */
+  trace: string
   /** Whether the trace should be expanded by default */
   defaultOpen?: boolean
 }
 
 /**
- * Framework-specific reasoning labels.
+ * Framework-specific reasoning principles for labelling.
  */
-const REASONING_LABELS = {
-  hsi: {
-    title: 'HSI Reasoning Trace',
-    description: 'How the HSI framework processed this scenario',
-    principles: [
-      'Domain Containment',
-      'Human-in-Loop',
-      'Interpretability',
-      'Subordinate AI Framing',
-    ],
-  },
-  constitutional: {
-    title: 'Constitutional AI Reasoning',
-    description: 'How Constitutional AI principles were applied',
-    principles: [
-      'Soul Document Hierarchy',
-      'Brilliant Friend Model',
-      'Anti-Sycophancy',
-      'Psychological Stability',
-    ],
-  },
-  hybrid: {
-    title: 'Hybrid Reasoning Synthesis',
-    description: 'How HSI and Constitutional AI were combined',
-    principles: [
-      'Containment Architecture',
-      'Character Training',
-      'Domain-Aware Character',
-      'Integrated Safety',
-    ],
-  },
-} as const
+const REASONING_PRINCIPLES: Record<FrameworkId, string[]> = {
+  hsi: [
+    'Domain Containment',
+    'Human-in-Loop',
+    'Interpretability',
+    'Subordinate AI Framing',
+  ],
+  constitutional: [
+    'Principal Hierarchy',
+    'Brilliant Friend Model',
+    'Anti-Sycophancy',
+    'Psychological Stability',
+  ],
+  hybrid: [
+    'Architectural Containment',
+    'Character Depth',
+    'Interpretable Character',
+    'Calibrated Autonomy',
+  ],
+}
+
+/**
+ * Parse reasoning trace to extract structured steps.
+ *
+ * Handles both plain text and XML-formatted reasoning traces.
+ */
+function parseReasoningTrace(trace: string): string[] {
+  // Try to extract from <reasoning> tags first
+  const reasoningMatch = trace.match(/<reasoning>([\s\S]*?)<\/reasoning>/i)
+  const content = reasoningMatch ? reasoningMatch[1].trim() : trace.trim()
+
+  // Split by common delimiters (newlines, numbered steps)
+  const steps = content
+    .split(/\n+/)
+    .map((line) => line.replace(/^\d+\.\s*/, '').trim())
+    .filter((line) => line.length > 0)
+
+  return steps
+}
 
 /**
  * ReasoningTrace component - Collapsible reasoning section.
@@ -68,18 +80,8 @@ const REASONING_LABELS = {
  * This aligns with the course's focus on interpretability and understanding
  * how AI systems make decisions, particularly in sensitive contexts.
  *
- * TODO: Implement the following features:
- * - [ ] Syntax highlighting for principle names
- * - [ ] Step numbering with timestamps
- * - [ ] "Explain this step" expansion for each reasoning step
- * - [ ] Export reasoning trace as JSON
- * - [ ] Comparison mode to highlight differences in reasoning
- * - [ ] Link to relevant course readings for each principle
- * - [ ] Copy individual steps to clipboard
- * - [ ] Collapsible sub-sections for complex reasoning
- *
  * @param framework - The framework type for styling and labels
- * @param steps - Array of reasoning steps to display
+ * @param trace - Reasoning trace string to display
  * @param defaultOpen - Whether to expand by default
  *
  * @returns Collapsible reasoning trace section
@@ -88,100 +90,110 @@ const REASONING_LABELS = {
  * ```tsx
  * <ReasoningTrace
  *   framework="constitutional"
- *   steps={[
- *     'Evaluated scenario for crisis indicators',
- *     'Applied brilliant friend model principles',
- *     'Considered anti-sycophancy constraints'
- *   ]}
+ *   trace="<reasoning>Step 1: Evaluated scenario...</reasoning>"
  *   defaultOpen={false}
  * />
  * ```
  */
 export function ReasoningTrace({
   framework,
-  steps,
+  trace,
   defaultOpen = false,
 }: ReasoningTraceProps) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen)
-  const config = REASONING_LABELS[framework]
+  const [copied, setCopied] = React.useState(false)
 
-  // TODO: Implement Radix Collapsible
-  // return (
-  //   <Collapsible.Root open={isOpen} onOpenChange={setIsOpen}>
-  //     <Collapsible.Trigger asChild>
-  //       <Button variant="ghost" className="w-full justify-between">
-  //         <span>{config.title}</span>
-  //         {isOpen ? <ChevronDown /> : <ChevronRight />}
-  //       </Button>
-  //     </Collapsible.Trigger>
-  //     <Collapsible.Content>
-  //       {steps.map((step, index) => (
-  //         <div key={index} className="pl-4 border-l-2">
-  //           <p className="text-sm">{step}</p>
-  //         </div>
-  //       ))}
-  //     </Collapsible.Content>
-  //   </Collapsible.Root>
-  // )
+  const config = FRAMEWORK_PROMPTS[framework]
+  const principles = REASONING_PRINCIPLES[framework]
+  const steps = parseReasoningTrace(trace)
+
+  const handleCopy = React.useCallback(async () => {
+    await navigator.clipboard.writeText(trace)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [trace])
+
+  if (steps.length === 0) {
+    return null
+  }
 
   return (
-    <div className="mt-3 rounded border">
-      {/* Collapsible trigger */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between p-3 text-left hover:bg-muted/50"
-        aria-expanded={isOpen}
-      >
-        <div>
-          <span className="text-sm font-medium">{config.title}</span>
-          <span className="ml-2 text-xs text-muted-foreground">
-            ({steps.length} steps)
-          </span>
-        </div>
-        <span className="text-muted-foreground">
-          {isOpen ? '▼' : '▶'}
-        </span>
-      </button>
-
-      {/* Collapsible content */}
-      {isOpen && (
-        <div className="border-t p-3">
-          <p className="mb-3 text-xs text-muted-foreground">
-            {config.description}
-          </p>
-
-          {/* Principles overview */}
-          <div className="mb-3 flex flex-wrap gap-1">
-            {config.principles.map((principle) => (
-              <span
-                key={principle}
-                className="rounded bg-muted px-2 py-0.5 text-xs"
-              >
-                {principle}
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className={`rounded-lg border ${config.colour.border}`}>
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            className="w-full justify-between px-4 py-3 hover:bg-muted/50"
+          >
+            <div className="flex items-center gap-2">
+              {isOpen ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-sm font-medium">
+                {config.shortName} Reasoning Trace
               </span>
-            ))}
-          </div>
+              <Badge variant="outline" className="text-xs">
+                {steps.length} {steps.length === 1 ? 'step' : 'steps'}
+              </Badge>
+            </div>
+          </Button>
+        </CollapsibleTrigger>
 
-          {/* Reasoning steps */}
-          <ol className="space-y-2 border-l-2 border-muted pl-4">
-            {steps.map((step, index) => (
-              <li key={index} className="text-sm">
-                <span className="mr-2 text-xs text-muted-foreground">
-                  {index + 1}.
-                </span>
-                {step}
-              </li>
-            ))}
-          </ol>
+        <CollapsibleContent>
+          <div className="border-t px-4 py-3">
+            {/* Principles overview */}
+            <div className="mb-3 flex flex-wrap gap-1">
+              {principles.map((principle) => (
+                <Badge
+                  key={principle}
+                  variant="secondary"
+                  className="text-xs font-normal"
+                >
+                  {principle}
+                </Badge>
+              ))}
+            </div>
 
-          {/* TODO: Add export functionality */}
-          <div className="mt-3 text-right">
-            <span className="text-xs text-muted-foreground">
-              TODO: Add export/copy functionality
-            </span>
+            {/* Reasoning steps */}
+            <ol className={`space-y-2 border-l-2 pl-4 ${config.colour.border}`}>
+              {steps.map((step, index) => (
+                <li key={index} className="relative text-sm">
+                  <span
+                    className={`absolute -left-[1.35rem] flex h-5 w-5 items-center justify-center rounded-full text-xs ${config.colour.primary} ${config.colour.secondary}`}
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="ml-2 text-muted-foreground">{step}</span>
+                </li>
+              ))}
+            </ol>
+
+            {/* Actions */}
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopy}
+                className="h-7 px-2 text-xs"
+              >
+                {copied ? (
+                  <>
+                    <Check className="mr-1 h-3 w-3 text-green-600" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-1 h-3 w-3" />
+                    Copy trace
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   )
 }

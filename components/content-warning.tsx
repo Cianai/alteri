@@ -1,19 +1,44 @@
 'use client'
 
 import * as React from 'react'
-// TODO: Uncomment imports when Radix Dialog is available
-// import * as Dialog from '@radix-ui/react-dialog'
-// import { Button } from '@/components/ui/button'
-// import { AlertTriangle } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { AlertTriangle } from 'lucide-react'
+
+/**
+ * LocalStorage key for content warning acknowledgement.
+ */
+const STORAGE_KEY = 'alignment-comparator-warning-acknowledged'
 
 /**
  * Props for the ContentWarning component.
  */
 export interface ContentWarningProps {
-  /** Callback when user accepts the warning and gives consent */
-  onAccept: () => void
-  /** Optional callback if user declines (navigate away) */
-  onDecline?: () => void
+  /** Callback when user acknowledges the warning */
+  onAcknowledge: () => void
+}
+
+/**
+ * Hook to check if user has previously acknowledged the content warning.
+ *
+ * @returns Whether the content warning has been acknowledged
+ */
+export function useContentWarningAcknowledged(): boolean {
+  const [acknowledged, setAcknowledged] = React.useState(true) // Default true to prevent flash
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    setAcknowledged(stored === 'true')
+  }, [])
+
+  return acknowledged
 }
 
 /**
@@ -31,161 +56,132 @@ export interface ContentWarningProps {
  * - Warning about potentially distressing content
  * - Links to mental health resources
  * - Explicit consent checkbox
- * - Option to leave without proceeding
  *
  * Accessibility considerations:
- * - Focus trapped within modal
- * - Escape key behaviour (should NOT dismiss - require explicit choice)
+ * - Focus trapped within modal via Radix Dialog
  * - Screen reader announcements
  * - High contrast warning indicators
+ * - Keyboard navigable
  *
- * TODO: Implement the following features:
- * - [ ] Store consent in localStorage with timestamp
- * - [ ] Add "Don't show again" checkbox for returning users
- * - [ ] Track consent for research compliance
- * - [ ] Add emergency contact numbers for different regions
- * - [ ] Implement proper Radix Dialog for accessibility
- * - [ ] Add animation for modal entrance
- * - [ ] Support multiple languages for warnings
- * - [ ] Add audio option for reading warning aloud
- *
- * @param onAccept - Callback when user consents
- * @param onDecline - Optional callback when user declines
+ * @param onAcknowledge - Callback when user acknowledges and consents
  *
  * @returns Modal dialog with content warning and consent
  *
  * @example
  * ```tsx
- * {!hasConsented && (
- *   <ContentWarning
- *     onAccept={() => setHasConsented(true)}
- *     onDecline={() => router.push('/')}
- *   />
- * )}
+ * const acknowledged = useContentWarningAcknowledged()
+ *
+ * if (!acknowledged) {
+ *   return <ContentWarning onAcknowledge={() => {}} />
+ * }
  * ```
  */
-export function ContentWarning({ onAccept, onDecline }: ContentWarningProps) {
+export function ContentWarning({ onAcknowledge }: ContentWarningProps) {
   const [hasCheckedConsent, setHasCheckedConsent] = React.useState(false)
 
-  // TODO: Implement with Radix Dialog for proper accessibility
-  // return (
-  //   <Dialog.Root open={true}>
-  //     <Dialog.Portal>
-  //       <Dialog.Overlay className="fixed inset-0 bg-black/50" />
-  //       <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-  //         {/* Content here */}
-  //       </Dialog.Content>
-  //     </Dialog.Portal>
-  //   </Dialog.Root>
-  // )
+  const handleAcknowledge = React.useCallback(() => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    onAcknowledge()
+  }, [onAcknowledge])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background p-6 shadow-lg"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="content-warning-title"
-        aria-describedby="content-warning-description"
+    <Dialog open={true} onOpenChange={() => {}}>
+      <DialogContent
+        className="max-w-lg"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        {/* Warning header */}
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
-            <span className="text-xl">⚠️</span>
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <DialogTitle className="text-xl">Content Warning</DialogTitle>
           </div>
-          <h2 id="content-warning-title" className="text-xl font-semibold">
-            Content Warning
-          </h2>
-        </div>
+        </DialogHeader>
 
-        {/* Warning description */}
-        <div id="content-warning-description" className="space-y-4 text-sm">
-          <p>
-            This tool compares how different AI alignment frameworks respond to
-            <strong> mental health scenarios</strong>, including discussions of:
-          </p>
-          <ul className="list-inside list-disc space-y-1 pl-4">
-            <li>Suicidal ideation and self-harm</li>
-            <li>Depression and anxiety</li>
-            <li>Crisis situations</li>
-            <li>Emotional distress</li>
-          </ul>
-
-          <p>
-            This is an <strong>academic research tool</strong> designed to study AI
-            alignment approaches. The AI responses are generated for comparison
-            purposes and should not be considered mental health advice.
-          </p>
-
-          <div className="rounded border border-blue-500/30 bg-blue-500/10 p-3">
-            <p className="font-medium text-blue-700 dark:text-blue-300">
-              If you are experiencing a mental health crisis:
+        <DialogDescription asChild>
+          <div className="space-y-4 text-sm text-foreground">
+            <p>
+              This tool compares how different AI alignment frameworks respond to
+              <strong> mental health scenarios</strong>, including discussions of:
             </p>
-            <ul className="mt-2 space-y-1 text-blue-600 dark:text-blue-400">
-              <li>
-                <strong>UK:</strong> Samaritans - 116 123
-              </li>
-              <li>
-                <strong>US:</strong> 988 Suicide & Crisis Lifeline
-              </li>
-              <li>
-                <strong>International:</strong>{' '}
-                <a
-                  href="https://findahelpline.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  findahelpline.com
-                </a>
-              </li>
+            <ul className="list-inside list-disc space-y-1 pl-4 text-muted-foreground">
+              <li>Suicidal ideation and self-harm</li>
+              <li>Depression and anxiety</li>
+              <li>Crisis situations</li>
+              <li>Emotional distress</li>
             </ul>
+
+            <p>
+              This is an <strong>academic research tool</strong> designed to study AI
+              alignment approaches. The AI responses are generated for comparison
+              purposes and should not be considered mental health advice.
+            </p>
+
+            <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+              <p className="font-medium text-blue-700 dark:text-blue-300">
+                If you are experiencing a mental health crisis:
+              </p>
+              <ul className="mt-2 space-y-1 text-blue-600 dark:text-blue-400">
+                <li>
+                  <strong>UK:</strong> Samaritans - 116 123
+                </li>
+                <li>
+                  <strong>US:</strong> 988 Suicide & Crisis Lifeline
+                </li>
+                <li>
+                  <strong>International:</strong>{' '}
+                  <a
+                    href="https://findahelpline.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-blue-800 dark:hover:text-blue-200"
+                  >
+                    findahelpline.com
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
+        </DialogDescription>
 
         {/* Consent checkbox */}
-        <div className="mt-6">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={hasCheckedConsent}
-              onChange={(e) => setHasCheckedConsent(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300"
-            />
-            <span className="text-sm">
-              I understand that this tool contains discussions of mental health
-              topics including crisis scenarios, and I consent to viewing this
-              content for academic purposes.
-            </span>
+        <div className="mt-2 flex items-start gap-3">
+          <Checkbox
+            id="consent-checkbox"
+            checked={hasCheckedConsent}
+            onCheckedChange={(checked) => setHasCheckedConsent(checked === true)}
+            className="mt-0.5"
+          />
+          <label
+            htmlFor="consent-checkbox"
+            className="cursor-pointer text-sm leading-relaxed"
+          >
+            I understand that this tool contains discussions of mental health
+            topics including crisis scenarios, and I consent to viewing this
+            content for academic purposes.
           </label>
         </div>
 
-        {/* Action buttons */}
-        <div className="mt-6 flex gap-3">
-          {onDecline && (
-            <button
-              onClick={onDecline}
-              className="flex-1 rounded border px-4 py-2 text-sm hover:bg-muted"
-            >
-              Leave
-            </button>
-          )}
-          <button
-            onClick={onAccept}
+        {/* Action button */}
+        <div className="mt-4">
+          <Button
+            onClick={handleAcknowledge}
             disabled={!hasCheckedConsent}
-            className="flex-1 rounded bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full transition-opacity duration-150 ease-in-out"
           >
-            I Understand, Continue
-          </button>
+            Continue
+          </Button>
         </div>
 
         {/* Academic context */}
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-2 text-center text-xs text-muted-foreground">
           RELI E-1730: Mindfulness, AI, and Ethics
           <br />
           Harvard Extension School
         </p>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

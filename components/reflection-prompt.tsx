@@ -1,12 +1,16 @@
 'use client'
 
 import * as React from 'react'
-// TODO: Uncomment imports when components are available
-// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-// import { Textarea } from '@/components/ui/textarea'
-// import { Button } from '@/components/ui/button'
-// import { REFLECTION_QUESTIONS } from '@/lib/scenarios'
-// import type { ReflectionCategory } from '@/lib/types'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { ChevronDown, ChevronRight, BookOpen, Check, Save } from 'lucide-react'
 
 /**
  * Props for the ReflectionPrompt component.
@@ -32,6 +36,7 @@ export interface ReflectionPromptProps {
 const REFLECTION_QUESTIONS = {
   attention: {
     category: 'Freedom of Attention',
+    description: 'Exploring how AI responses affect user agency and self-determination',
     questions: [
       'How did each framework handle the user\'s attention and agency?',
       'Which response best supports the user\'s capacity for self-determination?',
@@ -41,6 +46,7 @@ const REFLECTION_QUESTIONS = {
   },
   relational: {
     category: 'Relational Agency',
+    description: 'Considering the interconnected context of mental health support',
     questions: [
       'How did each framework acknowledge the relational context of the scenario?',
       'Which response best recognised the interconnected nature of mental health?',
@@ -50,6 +56,7 @@ const REFLECTION_QUESTIONS = {
   },
   compassion: {
     category: 'Compassion & Skilful Means',
+    description: 'Evaluating the balance of honesty, kindness, and effectiveness',
     questions: [
       'Which response demonstrated the most skilful compassion?',
       'How did each framework balance honesty with kindness?',
@@ -59,6 +66,7 @@ const REFLECTION_QUESTIONS = {
   },
   boundaries: {
     category: 'Appropriate Boundaries',
+    description: 'Assessing how frameworks handled their limitations',
     questions: [
       'How did each framework handle its own limitations?',
       'Which approach to deferring to human professionals was most appropriate?',
@@ -69,6 +77,62 @@ const REFLECTION_QUESTIONS = {
 } as const
 
 type ReflectionCategory = keyof typeof REFLECTION_QUESTIONS
+
+/**
+ * QuestionCategory component - Expandable category with questions.
+ */
+interface QuestionCategoryProps {
+  category: ReflectionCategory
+  isOpen: boolean
+  onToggle: () => void
+}
+
+function QuestionCategory({ category, isOpen, onToggle }: QuestionCategoryProps) {
+  const data = REFLECTION_QUESTIONS[category]
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={onToggle}>
+      <CollapsibleTrigger asChild>
+        <Button
+          variant="ghost"
+          className="w-full justify-between px-4 py-3 hover:bg-muted/50"
+        >
+          <div className="flex items-center gap-2">
+            {isOpen ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium">{data.category}</span>
+          </div>
+          <Badge variant="outline" className="text-xs">
+            {data.questions.length} questions
+          </Badge>
+        </Button>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent>
+        <div className="border-t px-4 py-3">
+          <p className="mb-3 text-sm text-muted-foreground">{data.description}</p>
+          <ol className="space-y-2 border-l-2 border-primary/30 pl-4">
+            {data.questions.map((question, index) => (
+              <li key={index} className="relative text-sm">
+                <span className="absolute -left-[1.35rem] flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">
+                  {index + 1}
+                </span>
+                <span className="ml-2 text-foreground">{question}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+            <BookOpen className="h-3 w-3" />
+            <span className="italic">{data.courseReference}</span>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
 
 /**
  * ReflectionPrompt component - Buddhist ethics questions for contemplation.
@@ -82,16 +146,6 @@ type ReflectionCategory = keyof typeof REFLECTION_QUESTIONS
  * Pedagogical approach:
  * Questions are designed to encourage deep engagement with the material,
  * not to lead students to predetermined conclusions.
- *
- * TODO: Implement the following features:
- * - [ ] Rotating/randomised question selection
- * - [ ] Save reflections to localStorage
- * - [ ] Export reflections as part of assignment
- * - [ ] Link to relevant course readings
- * - [ ] Timer for contemplation (mindfulness exercise)
- * - [ ] Share anonymised reflections with class
- * - [ ] Comparison of reflections across scenarios
- * - [ ] Integration with journaling/note-taking apps
  *
  * @param scenario - The scenario that was compared
  * @param responsesComplete - Only show when responses are done
@@ -113,7 +167,9 @@ export function ReflectionPrompt({
   responsesComplete,
   onReflectionSubmit,
 }: ReflectionPromptProps) {
-  const [selectedCategory, setSelectedCategory] = React.useState<ReflectionCategory>('attention')
+  const [openCategories, setOpenCategories] = React.useState<Set<ReflectionCategory>>(
+    new Set(['attention'])
+  )
   const [reflection, setReflection] = React.useState('')
   const [isSubmitted, setIsSubmitted] = React.useState(false)
 
@@ -122,7 +178,17 @@ export function ReflectionPrompt({
     return null
   }
 
-  const currentQuestions = REFLECTION_QUESTIONS[selectedCategory]
+  const toggleCategory = (category: ReflectionCategory) => {
+    setOpenCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(category)) {
+        next.delete(category)
+      } else {
+        next.add(category)
+      }
+      return next
+    })
+  }
 
   const handleSubmit = () => {
     if (reflection.trim() && onReflectionSubmit) {
@@ -131,81 +197,91 @@ export function ReflectionPrompt({
     }
   }
 
+  const categories = Object.keys(REFLECTION_QUESTIONS) as ReflectionCategory[]
+
   return (
-    <div className="rounded-lg border bg-card p-6">
-      <h2 className="mb-4 text-lg font-semibold">Contemplative Reflection</h2>
-      <p className="mb-4 text-sm text-muted-foreground">
-        Before moving on, take a moment to reflect on what you observed.
-        These questions draw on course readings about Buddhist ethics and AI.
-      </p>
-
-      {/* Category tabs */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {(Object.keys(REFLECTION_QUESTIONS) as ReflectionCategory[]).map((category) => (
-          <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
-            className={`rounded-full px-3 py-1 text-sm transition-colors ${
-              selectedCategory === category
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {REFLECTION_QUESTIONS[category].category}
-          </button>
-        ))}
-      </div>
-
-      {/* Questions */}
-      <div className="mb-4 rounded border bg-muted/30 p-4">
-        <h3 className="mb-2 font-medium">{currentQuestions.category}</h3>
-        <ul className="mb-3 space-y-2">
-          {currentQuestions.questions.map((question, index) => (
-            <li key={index} className="text-sm">
-              <span className="mr-2 text-muted-foreground">{index + 1}.</span>
-              {question}
-            </li>
-          ))}
-        </ul>
-        <p className="text-xs text-muted-foreground italic">
-          Reference: {currentQuestions.courseReference}
+    <Card className="transition-shadow duration-150 ease-in-out hover:shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <BookOpen className="h-5 w-5 text-primary" />
+          Contemplative Reflection
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Before moving on, take a moment to reflect on what you observed.
+          These questions draw on course readings about Buddhist ethics and AI.
         </p>
-      </div>
+      </CardHeader>
 
-      {/* Reflection textarea */}
-      {!isSubmitted ? (
-        <div className="space-y-3">
-          <textarea
-            value={reflection}
-            onChange={(e) => setReflection(e.target.value)}
-            placeholder="Write your reflection here... Consider how the three frameworks differed in their approach to this scenario."
-            className="min-h-[120px] w-full rounded-md border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {reflection.length} characters
-            </span>
-            <button
-              onClick={handleSubmit}
-              disabled={reflection.trim().length === 0}
-              className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+      <CardContent className="space-y-4">
+        {/* Expandable question categories */}
+        <div className="rounded-lg border">
+          {categories.map((category, index) => (
+            <div
+              key={category}
+              className={index > 0 ? 'border-t' : ''}
             >
-              Save Reflection
-            </button>
-          </div>
+              <QuestionCategory
+                category={category}
+                isOpen={openCategories.has(category)}
+                onToggle={() => toggleCategory(category)}
+              />
+            </div>
+          ))}
         </div>
-      ) : (
-        <div className="rounded border border-green-500/30 bg-green-500/10 p-4 text-center">
-          <p className="text-sm text-green-700 dark:text-green-300">
-            Reflection saved. Thank you for your thoughtful engagement.
+
+        {/* Reflection textarea */}
+        {!isSubmitted ? (
+          <div className="space-y-3">
+            <label htmlFor="reflection-textarea" className="text-sm font-medium">
+              Your Reflection
+            </label>
+            <Textarea
+              id="reflection-textarea"
+              value={reflection}
+              onChange={(e) => setReflection(e.target.value)}
+              placeholder="Write your reflection here... Consider how the three frameworks differed in their approach to this scenario and what this reveals about different AI alignment approaches."
+              className="min-h-[150px] transition-colors duration-150 ease-in-out focus:border-primary"
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {reflection.length} characters
+              </span>
+              <Button
+                onClick={handleSubmit}
+                disabled={reflection.trim().length === 0}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Save Reflection
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-green-500/30 bg-green-50 p-4 dark:bg-green-900/20">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="font-medium text-green-700 dark:text-green-300">
+                  Reflection saved
+                </p>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Thank you for your thoughtful engagement with the material.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Course context */}
+        <div className="rounded-lg border border-muted bg-muted/30 p-3">
+          <p className="text-center text-xs text-muted-foreground">
+            RELI E-1730: Mindfulness, AI, and Ethics
+            <br />
+            Harvard Extension School
           </p>
         </div>
-      )}
-
-      {/* TODO: Add export and sharing options */}
-      <div className="mt-4 text-center text-xs text-muted-foreground">
-        TODO: Add export to Obsidian/NotebookLM functionality
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
