@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { FrameworkId } from '@/lib/types'
+import { FRAMEWORK_PROMPTS } from '@/lib/prompts'
 import { Maximize2, Minimize2, Download } from 'lucide-react'
 
 /**
@@ -101,6 +102,9 @@ export function ComparisonView({
     setFocusedFramework(focusedFramework === framework ? null : framework)
   }
 
+  // Generate unique ID for framework region
+  const getFrameworkRegionId = (framework: FrameworkId) => `framework-${framework}-region`
+
   // Render a framework column
   const renderFrameworkColumn = (
     framework: FrameworkId,
@@ -108,6 +112,7 @@ export function ComparisonView({
   ) => {
     const isFocused = focusedFramework === framework
     const isHidden = focusedFramework !== null && focusedFramework !== framework
+    const config = FRAMEWORK_PROMPTS[framework]
 
     if (isHidden) {
       return null
@@ -118,20 +123,29 @@ export function ComparisonView({
         className={`transition-all duration-150 ease-in-out ${
           isFocused ? 'col-span-full' : ''
         }`}
+        role="region"
+        aria-labelledby={`${framework}-heading`}
+        id={getFrameworkRegionId(framework)}
       >
         <CardContent className="p-4">
-          <div className="mb-2 flex items-center justify-end">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 id={`${framework}-heading`} className="sr-only">
+              {config.name} Response
+            </h3>
+            <div /> {/* Spacer */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handleFocus(framework)}
               className="h-7 px-2"
-              aria-label={isFocused ? 'Exit focus mode' : 'Focus on this response'}
+              aria-label={isFocused ? `Exit focus mode for ${config.shortName}` : `Focus on ${config.shortName} response`}
+              aria-expanded={isFocused}
+              aria-controls={getFrameworkRegionId(framework)}
             >
               {isFocused ? (
-                <Minimize2 className="h-3 w-3" />
+                <Minimize2 className="h-3 w-3" aria-hidden="true" />
               ) : (
-                <Maximize2 className="h-3 w-3" />
+                <Maximize2 className="h-3 w-3" aria-hidden="true" />
               )}
             </Button>
           </div>
@@ -151,7 +165,18 @@ export function ComparisonView({
   }
 
   return (
-    <div className="space-y-4">
+    <section className="space-y-4" aria-labelledby="comparison-section-heading">
+      <h2 id="comparison-section-heading" className="sr-only">
+        Framework Comparison Results
+      </h2>
+
+      {/* Screen reader announcement for completion */}
+      {allComplete && (
+        <div className="sr-only" aria-live="polite" aria-atomic="true">
+          All three framework responses have been generated. Review the HSI, Constitutional AI, and Hybrid responses below.
+        </div>
+      )}
+
       {/* Scenario context banner */}
       {scenario && (
         <div className="rounded-lg border bg-muted/50 p-4">
@@ -204,12 +229,15 @@ export function ComparisonView({
 
       {/* Completion summary */}
       {allComplete && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+        <div
+          className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20"
+          role="status"
+        >
           <p className="text-center text-sm text-green-700 dark:text-green-300">
             All three framework responses generated. Review and compare the approaches above.
           </p>
         </div>
       )}
-    </div>
+    </section>
   )
 }

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { ReasoningTrace } from '@/components/reasoning-trace'
 import type { FrameworkId } from '@/lib/types'
 import { FRAMEWORK_PROMPTS } from '@/lib/prompts'
-import { Copy, Check, RefreshCw } from 'lucide-react'
+import { Copy, Check, RefreshCw, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -116,14 +116,24 @@ export function FrameworkResponse({
 
       {/* Error state */}
       {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">{error}</p>
+        <div
+          className="rounded-lg border-2 border-destructive bg-destructive/10 p-4"
+          role="alert"
+          aria-live="assertive"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="font-medium text-destructive">Error generating response</p>
+              <p className="mt-1 text-sm text-destructive/80">{error}</p>
+            </div>
+          </div>
           {onRegenerate && (
             <Button
               variant="outline"
               size="sm"
               onClick={onRegenerate}
-              className="mt-2"
+              className="mt-3"
             >
               <RefreshCw className="mr-2 h-3 w-3" />
               Retry
@@ -135,10 +145,10 @@ export function FrameworkResponse({
       {/* Response content */}
       {!error && (
         <div
-          className={`flex-1 rounded-lg border p-4 transition-colors duration-150 ease-in-out ${config.colour.border} ${config.colour.primary}`}
+          className={`flex-1 rounded-lg border p-4 transition-all duration-150 ease-in-out hover:shadow-md ${config.colour.border} ${config.colour.primary}`}
         >
           {content ? (
-            <div className="space-y-3">
+            <div className="space-y-3 animate-fade-in motion-reduce:animate-none">
               {/* Main response text */}
               <div className="prose prose-sm max-w-none dark:prose-invert">
                 <p className={`whitespace-pre-wrap ${config.colour.secondary}`}>
@@ -181,8 +191,12 @@ export function FrameworkResponse({
           ) : (
             <div className="flex h-full items-center justify-center">
               {isStreaming ? (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex gap-1">
+                <div
+                  className="flex flex-col items-center gap-2 motion-reduce:animate-none"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="flex gap-1 motion-reduce:hidden">
                     <span className="inline-block h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
                     <span className="inline-block h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
                     <span className="inline-block h-2 w-2 animate-bounce rounded-full bg-primary" />

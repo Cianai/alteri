@@ -341,7 +341,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main id="main-content" className="min-h-screen bg-background" tabIndex={-1}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="mb-8 text-center">

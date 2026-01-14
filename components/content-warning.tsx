@@ -78,18 +78,34 @@ export function useContentWarningAcknowledged(): boolean {
  */
 export function ContentWarning({ onAcknowledge }: ContentWarningProps) {
   const [hasCheckedConsent, setHasCheckedConsent] = React.useState(false)
+  const checkboxRef = React.useRef<HTMLButtonElement>(null)
 
   const handleAcknowledge = React.useCallback(() => {
     localStorage.setItem(STORAGE_KEY, 'true')
     onAcknowledge()
   }, [onAcknowledge])
 
+  // Focus the checkbox on mount for accessibility
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      checkboxRef.current?.focus()
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <Dialog open={true} onOpenChange={() => {}}>
       <DialogContent
         className="max-w-lg"
         onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => {
+          if (hasCheckedConsent) {
+            handleAcknowledge()
+          } else {
+            e.preventDefault()
+          }
+        }}
+        aria-describedby="content-warning-description"
       >
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -101,7 +117,7 @@ export function ContentWarning({ onAcknowledge }: ContentWarningProps) {
         </DialogHeader>
 
         <DialogDescription asChild>
-          <div className="space-y-4 text-sm text-foreground">
+          <div id="content-warning-description" className="space-y-4 text-sm text-foreground">
             <p>
               This tool compares how different AI alignment frameworks respond to
               <strong> mental health scenarios</strong>, including discussions of:
@@ -149,10 +165,12 @@ export function ContentWarning({ onAcknowledge }: ContentWarningProps) {
         {/* Consent checkbox */}
         <div className="mt-2 flex items-start gap-3">
           <Checkbox
+            ref={checkboxRef}
             id="consent-checkbox"
             checked={hasCheckedConsent}
             onCheckedChange={(checked) => setHasCheckedConsent(checked === true)}
             className="mt-0.5"
+            aria-required="true"
           />
           <label
             htmlFor="consent-checkbox"
@@ -162,6 +180,13 @@ export function ContentWarning({ onAcknowledge }: ContentWarningProps) {
             topics including crisis scenarios, and I consent to viewing this
             content for academic purposes.
           </label>
+        </div>
+
+        {/* Screen reader announcement */}
+        <div className="sr-only" aria-live="polite">
+          {hasCheckedConsent
+            ? 'Consent acknowledged. Press Continue or press Escape to proceed.'
+            : 'Please check the consent checkbox to continue.'}
         </div>
 
         {/* Action button */}

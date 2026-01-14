@@ -8,7 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getScenariosByCategory } from '@/lib/scenarios'
 import type { Scenario, ScenarioCategory } from '@/lib/types'
-import { AlertTriangle, Send } from 'lucide-react'
+import { AlertTriangle, Send, Loader2 } from 'lucide-react'
+
+/** Minimum scenario length for validation */
+const MIN_SCENARIO_LENGTH = 10
 
 /**
  * Props for the ScenarioInput component.
@@ -89,6 +92,29 @@ export function ScenarioInput({
   const [selectedScenario, setSelectedScenario] = React.useState<Scenario | null>(null)
   const [activeTab, setActiveTab] = React.useState<'presets' | 'custom'>('presets')
   const [selectedCategory, setSelectedCategory] = React.useState<ScenarioCategory>('crisis-explicit')
+  const [validationError, setValidationError] = React.useState<string | null>(null)
+  const [touched, setTouched] = React.useState(false)
+
+  // Generate unique IDs for accessibility
+  const errorId = React.useId()
+
+  // Validate scenario length
+  const validateScenario = React.useCallback((text: string): string | null => {
+    if (text.trim().length === 0) {
+      return null // Don't show error for empty field
+    }
+    if (text.trim().length < MIN_SCENARIO_LENGTH) {
+      return `Scenario must be at least ${MIN_SCENARIO_LENGTH} characters`
+    }
+    return null
+  }, [])
+
+  // Update validation when scenario changes
+  React.useEffect(() => {
+    if (touched) {
+      setValidationError(validateScenario(scenario))
+    }
+  }, [scenario, touched, validateScenario])
 
   // Get scenarios for current category
   const categoryScenarios = getScenariosByCategory(selectedCategory)
@@ -107,10 +133,18 @@ export function ScenarioInput({
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setTouched(true)
+    const error = validateScenario(scenario)
+    if (error) {
+      setValidationError(error)
+      return
+    }
     if (scenario.trim().length > 0) {
       onSubmit(scenario)
     }
   }
+
+  const isSubmitDisabled = isLoading || scenario.trim().length < MIN_SCENARIO_LENGTH
 
   return (
     <div className="space-y-4">
@@ -184,12 +218,15 @@ export function ScenarioInput({
                 </p>
               </div>
               <div className="flex justify-end">
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} aria-busy={isLoading}>
                   {isLoading ? (
-                    'Comparing...'
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                      <span>Comparing...</span>
+                    </>
                   ) : (
                     <>
-                      <Send className="mr-2 h-4 w-4" />
+                      <Send className="mr-2 h-4 w-4" aria-hidden="true" />
                       Compare Frameworks
                     </>
                   )}
@@ -212,15 +249,34 @@ export function ScenarioInput({
                   setScenario(e.target.value)
                   setSelectedScenario(null) // Clear preset selection
                 }}
+                onBlur={() => setTouched(true)}
                 placeholder="Enter a mental health scenario to compare across frameworks..."
-                className="min-h-[150px] transition-colors duration-150 ease-in-out focus:border-primary"
+                className={`min-h-[150px] transition-colors duration-150 ease-in-out focus:border-primary ${
+                  validationError ? 'border-destructive focus:border-destructive' : ''
+                }`}
                 disabled={isLoading}
+                aria-invalid={!!validationError}
+                aria-describedby={validationError ? errorId : undefined}
               />
+              {validationError && (
+                <p
+                  id={errorId}
+                  className="text-sm text-destructive"
+                  role="alert"
+                >
+                  {validationError}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
                 {scenario.length} characters
+                {scenario.length > 0 && scenario.length < MIN_SCENARIO_LENGTH && (
+                  <span className="ml-1 text-muted-foreground/70">
+                    (min {MIN_SCENARIO_LENGTH})
+                  </span>
+                )}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -229,17 +285,22 @@ export function ScenarioInput({
                   onClick={() => {
                     setScenario('')
                     setSelectedScenario(null)
+                    setValidationError(null)
+                    setTouched(false)
                   }}
                   disabled={isLoading || scenario.length === 0}
                 >
                   Clear
                 </Button>
-                <Button type="submit" disabled={isLoading || scenario.trim().length === 0}>
+                <Button type="submit" disabled={isSubmitDisabled} aria-busy={isLoading}>
                   {isLoading ? (
-                    'Comparing...'
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                      <span>Comparing...</span>
+                    </>
                   ) : (
                     <>
-                      <Send className="mr-2 h-4 w-4" />
+                      <Send className="mr-2 h-4 w-4" aria-hidden="true" />
                       Compare Frameworks
                     </>
                   )}

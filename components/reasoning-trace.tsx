@@ -103,6 +103,10 @@ export function ReasoningTrace({
   const [isOpen, setIsOpen] = React.useState(defaultOpen)
   const [copied, setCopied] = React.useState(false)
 
+  // Generate unique IDs for accessibility
+  const triggerId = React.useId()
+  const contentId = React.useId()
+
   const config = FRAMEWORK_PROMPTS[framework]
   const principles = REASONING_PRINCIPLES[framework]
   const steps = parseReasoningTrace(trace)
@@ -122,14 +126,17 @@ export function ReasoningTrace({
       <div className={`rounded-lg border ${config.colour.border}`}>
         <CollapsibleTrigger asChild>
           <Button
+            id={triggerId}
             variant="ghost"
             className="w-full justify-between px-4 py-3 hover:bg-muted/50"
+            aria-expanded={isOpen}
+            aria-controls={contentId}
           >
             <div className="flex items-center gap-2">
               {isOpen ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               )}
               <span className="text-sm font-medium">
                 {config.shortName} Reasoning Trace
@@ -141,7 +148,12 @@ export function ReasoningTrace({
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent>
+        <CollapsibleContent
+          id={contentId}
+          role="region"
+          aria-labelledby={triggerId}
+          className="data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up motion-reduce:animate-none overflow-hidden"
+        >
           <div className="border-t px-4 py-3">
             {/* Principles overview */}
             <div className="mb-3 flex flex-wrap gap-1">
