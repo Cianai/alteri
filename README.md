@@ -41,47 +41,53 @@ Open http://localhost:3000
 
 ## Deployment
 
-Deployed on Vercel at [URL TBD].
+### Vercel Setup
 
-Environment variables required in Vercel dashboard:
-- `ANTHROPIC_API_KEY`: Anthropic API key with Claude access
+1. Import the GitHub repo at [vercel.com/new](https://vercel.com/new)
+2. Configure as **Turborepo** with root directory: `apps/web`
+3. Set environment variables in Vercel dashboard:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for Claude |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | No | Supabase service role key (for server-side ops) |
+
+4. Deploy - Vercel will auto-detect Next.js and use `apps/web/vercel.json`
 
 ## Project Structure
 
 ```
-alignment-comparator/
-├── app/
-│   ├── page.tsx              # Main comparison interface
-│   ├── layout.tsx            # Root layout with metadata
-│   └── api/compare/route.ts  # Streaming API for parallel Claude calls
-├── components/
-│   ├── scenario-input.tsx    # Scenario selection and input
-│   ├── framework-response.tsx # Individual framework response display
-│   ├── comparison-view.tsx   # Three-column comparison layout
-│   ├── reasoning-trace.tsx   # Collapsible reasoning display
-│   ├── reflection-prompt.tsx # Buddhist ethics reflection questions
-│   └── content-warning.tsx   # Initial consent modal
-├── lib/
-│   ├── prompts.ts            # System prompts for three frameworks
-│   ├── scenarios.ts          # Preset scenario library
-│   ├── types.ts              # TypeScript interfaces
-│   └── utils.ts              # Shared utilities
-├── vercel.json               # Vercel deployment configuration
-└── next.config.mjs           # Next.js configuration with security headers
+alignment-comparator/          # Turborepo monorepo
+├── apps/
+│   └── web/                   # Next.js 15 app
+│       ├── app/               # App Router pages and API
+│       ├── components/        # React components
+│       ├── lib/               # Utilities, types, prompts
+│       └── vercel.json        # Vercel config (London region)
+├── packages/
+│   ├── ai/                    # Vercel AI SDK patterns
+│   ├── database/              # Supabase client and types
+│   ├── shared/                # Shared types and constants
+│   └── state-machines/        # XState comparison flow
+├── turbo.json                 # Turborepo pipeline config
+└── pnpm-workspace.yaml        # Workspace packages
 ```
 
 ## Tech Stack
 
-- Next.js 14 with App Router
-- TypeScript (strict mode)
-- Tailwind CSS + shadcn/ui
-- Vercel AI SDK (@ai-sdk/anthropic)
-- assistant-ui for AI chat components
-- Claude API (streaming)
+- **Framework**: Next.js 15 (App Router, React 19)
+- **Monorepo**: Turborepo with pnpm workspaces
+- **AI**: Vercel AI SDK 6.x (@ai-sdk/anthropic, @ai-sdk/openai)
+- **Database**: Supabase (PostgreSQL, Row Level Security)
+- **UI**: Tailwind CSS + shadcn/ui
+- **State**: XState 5 for comparison flow
+- **Language**: TypeScript (strict mode)
 
 ## Roadmap
 
-See [Linear project](https://linear.app/...) for current backlog.
+See [Linear project](https://linear.app/cianclaude/project/alignment-comparator-8c83dbd8-c96a-4506-81f3-8f61ca11348d) for current backlog.
 
 ## Content Warning
 
