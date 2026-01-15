@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Turborepo
+.turbo/
+
 # Next.js
 .next/
 out/
@@ -41,6 +44,9 @@ coverage/
 
 # Vercel
 .vercel
+
+# Supabase
+.supabase/
 
 # Misc
 *.log

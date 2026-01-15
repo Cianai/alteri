@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(turbo:*)",
+      "Bash(npx:*)",
+      "Bash(git:*)",
+      "Bash(supabase:*)",
+      "Bash(vercel:*)",
+      "Read",
+      "Write",
+      "Edit",
+      "mcp__context7__*",
+      "mcp__supabase__*",
+      "mcp__vercel__*",
+      "mcp__linear__*"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(rm -rf /)*"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$(git branch --show-current)\" != \"main\" ] || echo 'Warning: On main branch'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [[ \"$TOOL_INPUT\" == *.ts ]] || [[ \"$TOOL_INPUT\" == *.tsx ]]; then pnpm typecheck --filter=$(dirname $TOOL_INPUT) 2>/dev/null || true; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/mcp.json",
+  "servers": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@context7/mcp-server"],
+      "description": "PRIORITY: Version-specific documentation for Next.js, React, XState, Vercel AI SDK. Query FIRST before implementing features."
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com?read_only=true",
+      "description": "Supabase database operations, migrations, type generation, and RLS policy management"
+    },
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com",
+      "description": "Vercel deployments, logs, environment variables, and project configuration"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      },
+      "description": "GitHub PRs, issues, code reviews, and repository operations"
+    },
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp",
+      "description": "Linear issue tracking - project CIA (Alignment Comparator)"
+    }
+  }
+}
