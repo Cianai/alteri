@@ -101,9 +101,7 @@ function createStreamLine(event: StreamEvent): string {
  */
 export async function POST(request: NextRequest) {
   // TODO: Implement rate limiting
-  // For now, log request timestamp for monitoring
   const requestTimestamp = new Date().toISOString()
-  console.log(`[${requestTimestamp}] Compare request received`)
 
   // Check for API key
   if (!process.env.ANTHROPIC_API_KEY) {

@@ -320,10 +320,11 @@ export default function HomePage() {
 
   /**
    * Handle reflection submission (for future analytics).
+   * TODO: Wire up to Supabase for persistence
    */
-  const handleReflectionSubmit = React.useCallback((reflection: string) => {
-    // Future: Send to analytics endpoint
-    console.log('Reflection submitted:', reflection.substring(0, 100) + '...')
+  const handleReflectionSubmit = React.useCallback((_reflection: string) => {
+    // Future: Send to Supabase endpoint
+    // Will be implemented when evaluation flow is built
   }, [])
 
   // Check if all responses are complete (for showing reflection prompt)

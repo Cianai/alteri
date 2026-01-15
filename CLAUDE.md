@@ -12,7 +12,32 @@ A conversational research platform comparing AI alignment frameworks (Microsoft 
 - shadcn/ui components
 - React 19+ features
 
-When implementing any feature, first query Context7 with the library name and specific API you need. This ensures you're using current patterns rather than outdated training data. The query format should target the specific capability, e.g., "XState v5 invoke actors" or "Vercel AI SDK streamText with tools".
+When implementing any feature, first query Context7 with the library name and specific API you need. This ensures you're using current patterns rather than outdated training data.
+
+### Context7 Query Pattern
+
+```typescript
+// Step 1: Resolve library ID
+mcp__plugin_context7-plugin_context7__resolve-library-id({
+  libraryName: "next.js",
+  query: "What you're trying to accomplish"
+})
+
+// Step 2: Query docs with the resolved ID
+mcp__plugin_context7-plugin_context7__query-docs({
+  libraryId: "/vercel/next.js",  // From step 1
+  query: "Specific API or pattern needed"
+})
+```
+
+### Example Queries
+
+| Task | Library | Query |
+|------|---------|-------|
+| Async route params | next.js | "Next.js 15 async params searchParams migration" |
+| Streaming responses | ai | "Vercel AI SDK streamText with tools" |
+| State machine setup | xstate | "XState v5 createMachine setup invoke actors" |
+| RLS policies | supabase | "Supabase RLS policies for anonymous users" |
 
 ## Project Context
 
@@ -26,12 +51,13 @@ Academic context: Masters dissertation research on AI-mediated psychological res
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 14+ with App Router (Turborepo monorepo) |
+| Framework | Next.js 15+ with App Router (Turborepo monorepo) |
 | AI | Vercel AI SDK 4.0 (streaming, multi-turn, function calling) |
 | State | XState v5 (conversation flow orchestration) |
 | Database | Supabase (PostgreSQL, Auth, Row Level Security) |
 | Styling | Tailwind CSS, shadcn/ui components |
 | Testing | Vitest (unit), Playwright (E2E) |
+| Linting | ESLint 9 with flat config |
 
 ## Monorepo Structure
 
