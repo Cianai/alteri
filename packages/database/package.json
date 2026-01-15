@@ -11,11 +11,12 @@
     "db:migrate": "supabase db push"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
-    "@alignment-comparator/shared": "workspace:*"
+    "@alignment-comparator/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
-    "supabase": "^1.200.0"
+    "@types/node": "^22.0.0",
+    "supabase": "^1.200.0",
+    "typescript": "^5.6.0"
   }
 }
