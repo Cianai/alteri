@@ -26,9 +26,10 @@
       "description": "GitHub PRs, issues, code reviews, and repository operations"
     },
     "linear": {
-      "type": "http",
-      "url": "https://mcp.linear.app/mcp",
-      "description": "Linear issue tracking - project CIA (Alignment Comparator)"
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.linear.app/sse"],
+      "description": "Linear issue tracking - project CIA (Alignment Comparator). Run /mcp to authenticate on first use."
     }
   }
 }
