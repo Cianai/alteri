@@ -9,10 +9,10 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.14",
-    "@ai-sdk/openai": "^3.0.11",
+    "@ai-sdk/anthropic": "^3.0.15",
+    "@ai-sdk/openai": "^3.0.12",
     "@alignment-comparator/shared": "workspace:*",
-    "ai": "^6.0.37"
+    "ai": "^6.0.39"
   },
   "devDependencies": {
     "typescript": "^5.6.0"
