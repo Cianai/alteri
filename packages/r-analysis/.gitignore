@@ -1,0 +1,27 @@
+# renv
+renv/library/
+renv/staging/
+renv/python/
+renv/sandbox/
+.Rprofile
+
+# R session files
+.RData
+.Rhistory
+.Ruserdata
+*.RData
+
+# Output files (regenerate from scripts)
+outputs/*.pdf
+outputs/*.png
+outputs/*.html
+
+# Data files (not committed, obtain from secure source)
+data/*.csv
+data/*.sav
+data/*.dta
+data/*.rds
+
+# OS
+.DS_Store
+Thumbs.db

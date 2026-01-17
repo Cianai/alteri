@@ -30,6 +30,13 @@
       "command": "npx",
       "args": ["-y", "mcp-remote", "https://mcp.linear.app/sse"],
       "description": "Linear issue tracking - project CIA (Alignment Comparator). Run /mcp to authenticate on first use."
+    },
+    "r-btw": {
+      "type": "stdio",
+      "command": "Rscript",
+      "args": ["-e", "btw::btw_mcp_server(tools = 'docs')"],
+      "cwd": "packages/r-analysis",
+      "description": "R documentation retrieval via btw package. Requires renv environment in packages/r-analysis."
     }
   }
 }

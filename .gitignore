@@ -52,3 +52,4 @@ coverage/
 *.log
 *.pid
 *.seed
+.env*.local

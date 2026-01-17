@@ -7,13 +7,16 @@
       "Bash(git:*)",
       "Bash(supabase:*)",
       "Bash(vercel:*)",
+      "Bash(Rscript:*)",
+      "Bash(R:*)",
       "Read",
       "Write",
       "Edit",
       "mcp__context7__*",
       "mcp__supabase__*",
       "mcp__vercel__*",
-      "mcp__linear__*"
+      "mcp__linear__*",
+      "mcp__r-btw__*"
     ],
     "deny": [
       "Read(.env*)",
@@ -34,6 +37,10 @@
           {
             "type": "command",
             "command": "[ \"$(git branch --show-current)\" != \"main\" ] || echo 'Warning: On main branch'"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/pretool-r-validate.sh \"$TOOL_INPUT\""
           }
         ]
       }
