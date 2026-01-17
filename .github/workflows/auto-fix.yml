@@ -1,0 +1,74 @@
+name: Claude Code Auto-fix
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  auto-fix:
+    if: github.event.label.name == 'claude-action'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Read issue details
+        id: issue
+        run: |
+          echo "title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+          gh issue view ${{ github.event.issue.number }} --json body -q .body > issue_body.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Claude Code fix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude-code --print "
+          Fix GitHub issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+
+          Issue details:
+          $(cat issue_body.txt)
+
+          Instructions:
+          1. Analyse the failure described in the issue
+          2. Make the minimal fix required
+          3. Run verification (pnpm typecheck, pnpm test, pnpm lint) to confirm fix works
+          4. Commit with message: fix: resolve issue #${{ github.event.issue.number }}
+          5. Do not push - the workflow will handle that
+          "
+
+      - name: Push changes
+        run: |
+          git config user.name "Claude Code"
+          git config user.email "claude-code[bot]@users.noreply.github.com"
+          git push
+
+      - name: Close issue
+        run: |
+          gh issue close ${{ github.event.issue.number }} --comment "Auto-fixed by Claude Code. Changes pushed to main."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
