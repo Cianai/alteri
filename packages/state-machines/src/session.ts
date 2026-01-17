@@ -1,25 +1,36 @@
 import { setup, assign } from 'xstate';
-import type { SessionState } from '@alignment-comparator/shared';
+import type {
+  SessionPhase,
+  DemographicsData,
+  NetworkData,
+} from '@alignment-comparator/shared';
 
 /** Events for session state machine */
 type SessionEvent =
   | { type: 'START'; participantId: string }
   | { type: 'CONSENT_GIVEN' }
-  | { type: 'DEMOGRAPHICS_COMPLETE' }
-  | { type: 'ELICITATION_COMPLETE' }
+  | { type: 'DEMOGRAPHICS_COMPLETE'; data: DemographicsData }
+  | { type: 'NETWORK_COMPLETE'; data: NetworkData }
+  | { type: 'COMPARISON_COMPLETE' }
+  | { type: 'REFLECTION_COMPLETE' }
   | { type: 'RESET' };
 
 /** Context for session state machine */
 interface SessionContext {
   participantId: string | null;
-  phase: SessionState['currentPhase'];
+  phase: SessionPhase;
   startedAt: Date | null;
   completedAt: Date | null;
+  demographics: DemographicsData | null;
+  network: NetworkData | null;
 }
 
 /**
- * Session state machine managing participant journey
- * Tracks progression through: consent -> demographics -> elicitation -> results
+ * Session state machine managing participant journey.
+ *
+ * Flow: consent -> demographics -> network-elicitation -> comparison -> reflection -> results
+ *
+ * @see packages/state-machines/CLAUDE.md for patterns
  */
 export const sessionMachine = setup({
   types: {
@@ -32,28 +43,30 @@ export const sessionMachine = setup({
         event.type === 'START' ? event.participantId : null,
       startedAt: () => new Date(),
     }),
-    advancePhase: assign({
-      phase: ({ context }): SessionState['currentPhase'] => {
-        switch (context.phase) {
-          case 'consent':
-            return 'demographics';
-          case 'demographics':
-            return 'elicitation';
-          case 'elicitation':
-            return 'results';
-          default:
-            return context.phase;
-        }
-      },
+    saveDemographics: assign({
+      demographics: ({ event }) =>
+        event.type === 'DEMOGRAPHICS_COMPLETE' ? event.data : null,
+      phase: 'network-elicitation' as SessionPhase,
     }),
-    markComplete: assign({
+    saveNetwork: assign({
+      network: ({ event }) =>
+        event.type === 'NETWORK_COMPLETE' ? event.data : null,
+      phase: 'comparison' as SessionPhase,
+    }),
+    advanceToReflection: assign({
+      phase: 'reflection' as SessionPhase,
+    }),
+    advanceToResults: assign({
+      phase: 'results' as SessionPhase,
       completedAt: () => new Date(),
     }),
     resetSession: assign({
       participantId: null,
-      phase: 'consent' as const,
+      phase: 'consent' as SessionPhase,
       startedAt: null,
       completedAt: null,
+      demographics: null,
+      network: null,
     }),
   },
 }).createMachine({
@@ -64,6 +77,8 @@ export const sessionMachine = setup({
     phase: 'consent',
     startedAt: null,
     completedAt: null,
+    demographics: null,
+    network: null,
   },
   states: {
     idle: {
@@ -78,25 +93,45 @@ export const sessionMachine = setup({
       on: {
         CONSENT_GIVEN: {
           target: 'demographics',
-          actions: 'advancePhase',
         },
       },
+      entry: assign({ phase: 'consent' as SessionPhase }),
     },
     demographics: {
       on: {
         DEMOGRAPHICS_COMPLETE: {
-          target: 'elicitation',
-          actions: 'advancePhase',
+          target: 'networkElicitation',
+          actions: 'saveDemographics',
         },
       },
+      entry: assign({ phase: 'demographics' as SessionPhase }),
     },
-    elicitation: {
+    networkElicitation: {
       on: {
-        ELICITATION_COMPLETE: {
-          target: 'results',
-          actions: ['advancePhase', 'markComplete'],
+        NETWORK_COMPLETE: {
+          target: 'comparison',
+          actions: 'saveNetwork',
         },
       },
+      entry: assign({ phase: 'network-elicitation' as SessionPhase }),
+    },
+    comparison: {
+      on: {
+        COMPARISON_COMPLETE: {
+          target: 'reflection',
+          actions: 'advanceToReflection',
+        },
+      },
+      entry: assign({ phase: 'comparison' as SessionPhase }),
+    },
+    reflection: {
+      on: {
+        REFLECTION_COMPLETE: {
+          target: 'results',
+          actions: 'advanceToResults',
+        },
+      },
+      entry: assign({ phase: 'reflection' as SessionPhase }),
     },
     results: {
       on: {
@@ -105,6 +140,7 @@ export const sessionMachine = setup({
           actions: 'resetSession',
         },
       },
+      entry: assign({ phase: 'results' as SessionPhase }),
     },
   },
 });

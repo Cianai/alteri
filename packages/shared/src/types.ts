@@ -41,12 +41,54 @@ export interface Participant {
   consentedAt?: Date;
 }
 
+/** Session phases for participant journey */
+export type SessionPhase =
+  | 'consent'
+  | 'demographics'
+  | 'network-elicitation'
+  | 'comparison'
+  | 'reflection'
+  | 'results';
+
 /** Session state for elicitation flows */
 export interface SessionState {
   participantId: string;
-  currentPhase: 'consent' | 'demographics' | 'elicitation' | 'results';
+  currentPhase: SessionPhase;
   startedAt: Date;
   completedAt?: Date;
+}
+
+/** Demographics data collected from survey */
+export interface DemographicsData {
+  ageRange: string;
+  gender: string;
+  education: string;
+  aiFamiliarity: string;
+  techBackground: string;
+  interestAreas?: string[];
+  participationReason: string;
+}
+
+/** Network alter (person named in ego-centric network) */
+export interface NetworkAlter {
+  id: string;
+  name: string;
+  relationship?: string;
+  closeness?: number;
+}
+
+/** Network tie (relationship between alters) */
+export interface NetworkTie {
+  source: string; // alter id
+  target: string; // alter id
+  strength?: number;
+}
+
+/** Ego-centric network data from elicitation */
+export interface NetworkData {
+  alters: NetworkAlter[];
+  ties: NetworkTie[];
+  collectedAt: Date;
 }
 
 /** Buddhist ethics evaluation dimensions */
