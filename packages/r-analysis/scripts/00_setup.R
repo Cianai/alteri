@@ -74,9 +74,20 @@ packages <- list(
     "NetworkComparisonTest",# Statistical network comparison
     "networktools",         # Network analysis utilities (lowercase on CRAN)
     "EGAnet",               # Exploratory Graph Analysis (CRAN name)
-    "lvnet"                 # Latent variable network models
+    "lvnet",                # Latent variable network models
+    # Day 1: Causal discovery
+    "pcalg",                # PC algorithm for causal discovery
+    "corpcor",              # Partial correlations
+    # Day 2: Cross-sectional networks
+    "psych",                # Psychometrics, BFI data
+    "IsingSampler",         # Ising model sampling
+    # Day 3: Bayesian analysis
+    "easybgm",              # Easy Bayesian Graphical Models
+    # Day 4: Time series
+    "patchwork"             # Plot composition
     # Note: GGMnonreg archived due to missing dependencies (GGMncv)
     # Use BGGM for Bayesian non-regularised estimation instead
+    # Note: INIT from GitHub installed separately
   ),
 
   # UAB Barcelona Personal Networks (2-6 Feb 2026)
@@ -159,6 +170,45 @@ install_if_missing(packages$agentic, "Agentic R Development")
 cat("\n───────────────────────────────────────────────────────────────\n")
 cat("Shiny Network Elicitation (replacing Qualtrics/Network Canvas)\n")
 install_if_missing(packages$shiny_elicitation, "Shiny Elicitation Tools")
+
+# Install Bioconductor packages (pcalg dependencies)
+cat("\n───────────────────────────────────────────────────────────────\n")
+cat("Bioconductor packages (for pcalg causal discovery)\n")
+bioc_pkgs <- c("graph", "RBGL")
+for (pkg in bioc_pkgs) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    cat("  Installing", pkg, "from Bioconductor...\n")
+    tryCatch({
+      if (!requireNamespace("BiocManager", quietly = TRUE)) {
+        install.packages("BiocManager")
+      }
+      BiocManager::install(pkg, ask = FALSE, update = FALSE)
+      cat("  ✓", pkg, "installed\n")
+    }, error = function(e) {
+      cat("  ✗", pkg, "FAILED:", conditionMessage(e), "\n")
+    })
+  } else {
+    cat("  ✓", pkg, "(already installed)\n")
+  }
+}
+
+# Install GitHub packages (PSYNETS Day 4)
+cat("\n───────────────────────────────────────────────────────────────\n")
+cat("GitHub packages (PSYNETS Day 4: Individual Network Invariance Test)\n")
+if (!requireNamespace("INIT", quietly = TRUE)) {
+  cat("  Installing INIT from GitHub...\n")
+  tryCatch({
+    if (!requireNamespace("remotes", quietly = TRUE)) {
+      install.packages("remotes")
+    }
+    remotes::install_github("RiaHoekstra/INIT", quiet = TRUE)
+    cat("  ✓ INIT installed\n")
+  }, error = function(e) {
+    cat("  ✗ INIT FAILED:", conditionMessage(e), "\n")
+  })
+} else {
+  cat("  ✓ INIT (already installed)\n")
+}
 
 # Snapshot the environment
 cat("\n───────────────────────────────────────────────────────────────\n")

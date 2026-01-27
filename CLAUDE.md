@@ -1,16 +1,17 @@
-# Alignment Comparator
+# Alteri
 
-A conversational research platform comparing AI alignment frameworks (Microsoft HSI vs Anthropic Constitutional AI) through Buddhist ethics evaluation methodology.
+A multi-component research platform for mapping human connection patterns — AI-human dialogue, romantic attachment (limerence), and social networks. Comparing AI alignment frameworks (Microsoft HSI vs Anthropic Constitutional AI) through Buddhist ethics evaluation methodology.
 
 ## Documentation-First Development
 
 **ALWAYS use Context7 MCP before writing code that involves these libraries:**
 - Next.js (App Router, Server Components, Route Handlers)
-- Vercel AI SDK (streaming, useChat, generateText)
+- Vercel AI SDK v6 (streaming, useChat, generateText)
 - XState v5 (machines, actors, guards, actions)
 - Supabase (client, RLS, realtime, auth)
 - shadcn/ui components
 - React 19+ features
+- R packages (bootnet, psychonetrics, egor, mlVAR)
 
 When implementing any feature, first query Context7 with the library name and specific API you need. This ensures you're using current patterns rather than outdated training data.
 
@@ -38,48 +39,64 @@ mcp__plugin_context7-plugin_context7__query-docs({
 | Streaming responses | ai | "Vercel AI SDK streamText with tools" |
 | State machine setup | xstate | "XState v5 createMachine setup invoke actors" |
 | RLS policies | supabase | "Supabase RLS policies for anonymous users" |
+| Network analysis | bootnet | "bootnet estimateNetwork EBIC" |
 
 ## Project Context
 
-This platform serves two personas:
-- **Participants**: Complete guided elicitation flows, view personal results
-- **Researchers**: Access aggregated data, framework comparison tools, export capabilities
+This platform serves multiple personas:
+- **Participants**: Complete guided elicitation flows, view personal network results
+- **Researchers**: Access aggregated data, network analysis tools, export capabilities
+- **Clinicians** (planned): Monitor patient progress, clinical decision support
 
-Academic context: Masters dissertation research on AI-mediated psychological research methodology.
+Academic context: Masters dissertation research (KCL) on AI-mediated psychological research methodology, plus Harvard course on Mindfulness, AI, and Ethics.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
 | Framework | Next.js 15+ with App Router (Turborepo monorepo) |
-| AI | Vercel AI SDK 4.0 (streaming, multi-turn, function calling) |
+| AI | Vercel AI SDK v6 (streaming, multi-turn, function calling) |
 | State | XState v5 (conversation flow orchestration) |
-| Database | Supabase (PostgreSQL, Auth, Row Level Security) |
+| Database | Supabase (PostgreSQL, Auth, Row Level Security, pgvector planned) |
 | Styling | Tailwind CSS, shadcn/ui components |
+| Forms | SurveyJS for structured data collection |
+| Analysis | R 4.4+ with renv (371 packages for network analysis) |
 | Testing | Vitest (unit), Playwright (E2E) |
 | Linting | ESLint 9 with flat config |
 
 ## Monorepo Structure
 
 ```
-alignment-comparator/
+alteri/
 ├── apps/
-│   └── web/                    # Next.js application
-│       ├── app/                # App Router pages and API routes
-│       ├── components/         # React components
-│       └── lib/                # App-specific utilities
+│   └── web/                       # Next.js application
+│       ├── app/                   # App Router pages and API routes
+│       ├── components/            # React components
+│       └── lib/                   # App-specific utilities
 ├── packages/
-│   ├── shared/                 # Cross-package types and utilities
-│   ├── state-machines/         # XState conversation flows
-│   ├── database/               # Supabase client and types
-│   └── ai/                     # Vercel AI SDK patterns and prompts
-├── turbo.json                  # Turborepo task configuration
-└── pnpm-workspace.yaml         # Workspace definition
+│   ├── ai/                        # Vercel AI SDK v6 patterns and prompts
+│   ├── database/                  # Supabase client and types
+│   ├── r-analysis/                # R network analysis (371 packages)
+│   │   ├── scripts/               # Analysis scripts (PSYNETS, UAB)
+│   │   ├── renv.lock              # Reproducible R environment
+│   │   └── CLAUDE.md              # R-specific development guide
+│   ├── shared/                    # Cross-package types and utilities
+│   └── state-machines/            # XState conversation flows
+├── .claude/
+│   ├── settings.json              # Claude Code configuration
+│   └── skills/                    # Domain-specific skills
+│       ├── r-multilevel-networks/ # R network analysis expertise
+│       ├── research-platform/     # Research workflow patterns
+│       ├── vercel-ai-patterns/    # AI SDK integration
+│       └── xstate-conversations/  # State machine patterns
+├── turbo.json                     # Turborepo task configuration
+└── pnpm-workspace.yaml            # Workspace definition
 ```
 
 ## Commands
 
 ```bash
+# TypeScript/Node
 pnpm dev              # Start all packages in dev mode
 pnpm build            # Build all packages
 pnpm test             # Run Vitest across packages
@@ -87,6 +104,10 @@ pnpm typecheck        # TypeScript validation
 pnpm db:generate      # Generate Supabase types
 pnpm db:migrate       # Run database migrations
 pnpm lint             # ESLint + Prettier
+
+# R Analysis (in packages/r-analysis/)
+renv::restore()       # Install packages from lockfile
+source("scripts/00_setup.R")  # Verify environment
 ```
 
 ## Code Conventions
@@ -110,6 +131,13 @@ pnpm lint             # ESLint + Prettier
 - Prefer invoke for async operations
 - Use actors for parallel conversation processes
 
+### R Analysis
+- All scripts use renv for reproducibility
+- Prefer `here::here()` over hardcoded paths
+- Set seeds before stochastic operations (`set.seed()`)
+- Avoid igraph/statnet conflicts (use one per script)
+- See `packages/r-analysis/CLAUDE.md` for detailed patterns
+
 ### Database
 - snake_case for tables and columns
 - RLS policies required on all participant-facing tables
@@ -123,7 +151,7 @@ pnpm lint             # ESLint + Prettier
 
 ## Linear Integration
 
-Project: Alignment Comparator (CIA-)
+Project: Alteri (CIA-) - 106 issues across 8 development phases
 Create issues for new work, reference existing issues in commits.
 
 ## Framework Colours
@@ -155,10 +183,12 @@ The system prompts encode specific alignment philosophies derived from:
 4. **Remove content warnings** or crisis resource links
 5. **Add console.log statements** to production code paths
 6. **Commit .env files** or expose secrets
+7. **Use outdated library patterns** without checking Context7 first
 
 ## File References
 
 - @packages/state-machines/CLAUDE.md - XState patterns
 - @packages/database/CLAUDE.md - Supabase conventions
 - @packages/ai/CLAUDE.md - Vercel AI SDK patterns
+- @packages/r-analysis/CLAUDE.md - R network analysis patterns
 - @apps/web/CLAUDE.md - Next.js application specifics

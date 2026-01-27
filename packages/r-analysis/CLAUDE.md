@@ -13,19 +13,57 @@ This package contains R scripts and renv environment for statistical network ana
 Rscript -e "renv::restore()"
 ```
 
-## MCP Server (Optional)
+## Claude Code Integration (Full Execution)
 
-For interactive R sessions with Claude Code, install the Posit mcptools server:
+Claude Code has full access to this R environment via MCP servers. Three modes available:
 
-```bash
-# Add to Claude Code
-claude mcp add -s "user" r-mcptools -- Rscript -e "mcptools::mcp_server()"
+### Mode 1: Documentation Lookup (r-btw, isolated)
+Spawns fresh R process for documentation queries:
+```
+Claude Code → r-btw MCP → btw::btw_mcp_server() → R docs
+```
+Use for: Package help, vignettes, function signatures. Always available.
+
+### Mode 2: Live Session Bridge (r-session, connected)
+Connects to your running Positron session via mcptools session discovery:
+```
+Positron → mcptools::mcp_session() → [registered]
+Claude Code → r-session MCP → list_r_sessions() → select_r_session() → YOUR session
 ```
 
-Then in any R session you want Claude to access:
-```r
-mcptools::mcp_session()
+**Setup workflow:**
+1. Open this folder in Positron (`.Rprofile` auto-registers session)
+2. In Claude Code, use `r-session` MCP tools:
+   - `list_r_sessions()` - shows available R sessions (by working dir, IDE type)
+   - `select_r_session()` - connect to your Positron session
+3. All subsequent R tools now execute in your live session
+
+**What Claude can do in session mode:**
+- Inspect variables and dataframes in your environment
+- Execute R code in your running session
+- See results of your interactive work
+- Access loaded data without re-loading
+
+### Mode 3: Positron Assistant (Inline)
+Native Positron AI with direct session access (no MCP required):
 ```
+Positron Assistant → Native R session access → Inline completions + chat
+```
+Use for: Quick exploratory analysis, inline completions, rapid iteration.
+
+## Hybrid Pair Programming Workflow
+
+Use both Claude Code and Positron Assistant together:
+
+| Tool | Best For | R Session Access |
+|------|----------|------------------|
+| **Positron Assistant** | Quick questions, inline completions, exploratory analysis | Native (always connected) |
+| **Claude Code (r-session)** | Multi-file changes, documentation, testing, planning | Via session discovery |
+| **Claude Code (r-btw)** | Documentation lookup when session not needed | Isolated process |
+
+**Role Division:**
+- Positron Assistant: "What does this error mean?" "Complete this dplyr chain"
+- Claude Code: "Refactor analysis across 3 scripts" "Write tests for this function"
 
 ## Package Categories
 
@@ -75,25 +113,77 @@ Egocentric/personal network research course packages:
 - `ggeffects` - Marginal effects visualisation
 
 ### Agentic Development Infrastructure (2026 best practices)
-- `btw` - MCP server for R documentation retrieval
+- `btw` - MCP server for R documentation, environment, and code execution
+- `mcptools` - MCP protocol infrastructure (session registration)
+- `ellmer` - Tidyverse LLM interface with tool registration
 - `targets` - Pipeline orchestration for reproducible workflows
 - `here` - Path management (no hardcoded paths)
-- `ellmer` - Tidyverse LLM interface with tool registration
 
 ### Shiny Network Elicitation (replacing Qualtrics/Network Canvas)
 - `visNetwork` - Interactive network visualisation for elicitation
 - `shinyvalidate` - Input validation for survey forms
 - `reactable` - Interactive tables for name interpreters
 
-## MCP Server (btw)
+## MCP Server Configuration
 
-The btw MCP server provides R documentation retrieval for Claude Code:
+Two MCP servers configured in project `.mcp.json`:
 
+### r-btw (Isolated Process)
 ```bash
-# Configured in .mcp.json - starts automatically with project
-# Or run manually:
-Rscript -e "btw::btw_mcp_server(tools = 'docs')"
+Rscript -e "btw::btw_mcp_server()"
 ```
+Spawns fresh R process each call. Use for documentation lookup.
+
+### r-session (Session Discovery)
+```bash
+Rscript -e "mcptools::mcp_server(btw::btw_tools())"
+```
+Includes session discovery tools. Use for live session connection.
+
+| Tool Group | Capabilities |
+|------------|--------------|
+| `docs` | Query R package documentation, vignettes, help pages |
+| `env` | Inspect variables, dataframes, environment state |
+| `files` | Code search, file operations within project |
+| `run` | Execute R code and see results |
+| `pkg` | Package development (document, check, test, coverage) |
+| `list_r_sessions` | Discover available R sessions (mcptools) |
+| `select_r_session` | Connect to a discovered session (mcptools) |
+
+### PSYNETS Workflow (26-30 Jan 2026)
+
+**Session Strategy:** Continue in this Claude Code session for all 5 days. The course builds conceptually, and context carries over (e.g., Day 2's stability analysis informs Day 3's Bayesian approach).
+
+**Theory Support (During Lectures):**
+1. Ask Claude Code to explain concepts as they arise
+2. Reference: "Explain [concept] from the Day X lecture"
+3. Claude has access to course booklet context and prepared scripts
+
+**Practical Support (During Tutorials):**
+1. Open `packages/r-analysis/` in Positron
+2. Load day script: `source(here("scripts/psynets/dayX_topic.R"))`
+3. Run code blocks interactively in Positron
+4. Ask Claude Code to interpret outputs or debug errors
+5. Positron Assistant handles quick inline questions
+
+**Available Scripts:**
+| Day | Script | Topics |
+|-----|--------|--------|
+| 1 | `data/psynets/Practical 1 Cian.R` | Causal discovery, PC/FCI algorithms |
+| 2 | `scripts/psynets/day2_cross_sectional.R` | EBICglasso, bootnet, NCT |
+| 3 | `scripts/psynets/day3_bayesian.R` | easybgm, Bayes factors, priors |
+| 4 | `scripts/psynets/day4_time_series.R` | GVAR, mlVAR, psychonetrics |
+| 5 | `scripts/psynets/day5_advanced.R` | mgm, moderated networks |
+
+**Data Symlinks:**
+- `data/psynets/day3-morning-data.rds` → Bayesian MRF exercise
+- `data/psynets/day3-afternoon-data.rds` → Structure priors exercise
+- `data/psynets/day4-panel-data.RData` → Panel VAR exercise
+
+**Role Division:**
+- **You:** Theoretical interpretation, domain knowledge, research questions
+- **Claude Code:** Code execution, debugging, syntax, package help
+- **Positron Assistant:** Quick inline completions, exploratory analysis
 
 ## Slash Commands
 
@@ -132,10 +222,21 @@ r-analysis/
 ├── CLAUDE.md          # This file
 ├── renv.lock          # Locked package versions
 ├── renv/              # renv library cache
-├── scripts/           # Analysis scripts
+├── scripts/
 │   ├── 00_setup.R     # Environment verification
 │   ├── 01_data_prep.R # Data import and cleaning
-│   └── ...
+│   └── psynets/       # PSYNETS course scripts
+│       ├── day2_cross_sectional.R
+│       ├── day3_bayesian.R
+│       ├── day4_time_series.R
+│       └── day5_advanced.R
+├── data/
+│   └── psynets/       # Course data (symlinks to Obsidian vault)
+│       ├── day1-graph.txt
+│       ├── day1-helpers.R
+│       ├── day3-morning-data.rds
+│       ├── day3-afternoon-data.rds
+│       └── day4-panel-data.RData
 └── outputs/           # Generated figures, tables
 ```
 
@@ -167,3 +268,4 @@ These statistical decisions cannot be automated. Flag for Linear review:
 4. Interpret centrality without stability analysis
 5. Use hardcoded paths - use `here::here()` instead
 6. Mix igraph and statnet without explicit namespaces
+7. Store API keys or credentials as R variables (MCP exposes environment)

@@ -34,9 +34,16 @@
     "r-btw": {
       "type": "stdio",
       "command": "Rscript",
-      "args": ["-e", "btw::btw_mcp_server(tools = 'docs')"],
+      "args": ["-e", "btw::btw_mcp_server()"],
       "cwd": "packages/r-analysis",
-      "description": "R documentation retrieval via btw package. Requires renv environment in packages/r-analysis."
+      "description": "Full btw tools (docs, env, files, run, pkg). Isolated process - use for docs lookup."
+    },
+    "r-session": {
+      "type": "stdio",
+      "command": "Rscript",
+      "args": ["-e", "mcptools::mcp_server(btw::btw_tools())"],
+      "cwd": "packages/r-analysis",
+      "description": "Session-aware R tools. Use list_r_sessions() to find Positron, then select_r_session() to connect."
     }
   }
 }
