@@ -149,10 +149,111 @@ source("scripts/00_setup.R")  # Verify environment
 - E2E tests in `apps/web/e2e/`
 - Test state machines with @xstate/test
 
+## Dependency Tracking
+
+Strategic visibility into active, evaluating, and tracked dependencies beyond lock files.
+
+**Manifest:** `alteri-dependencies.json` - JSON inventory of all dependencies by category
+**Script:** `scripts/alteri-deps.sh` - CLI for querying and managing dependencies
+
+### Commands
+
+```bash
+# View dependencies
+./scripts/alteri-deps.sh --list          # All dependencies by category
+./scripts/alteri-deps.sh --active        # Production dependencies only
+./scripts/alteri-deps.sh --evaluating    # POC/trial dependencies
+./scripts/alteri-deps.sh --tracking      # Watching for future adoption
+
+# Inspect specific dependency
+./scripts/alteri-deps.sh --check xstate  # Status, version, purpose
+
+# Lifecycle management
+./scripts/alteri-deps.sh --promote <name>  # evaluating → active
+./scripts/alteri-deps.sh --archive <name>  # evaluating → tracking
+
+# Discovery
+./scripts/alteri-deps.sh --sync-linear   # Pull dependency-tagged Linear issues
+./scripts/alteri-deps.sh --sync-stars    # Pull relevant GitHub stars
+
+# Research
+./scripts/alteri-deps.sh --ecosystem <name>  # HN, GitHub, issues for a dependency
+```
+
+### When to Update
+
+- **Adding a new dependency:** Add to manifest with purpose and version
+- **Promoting from evaluation:** Run `--promote <name>` when installed to package.json/renv
+- **Archiving:** Run `--archive <name>` when evaluation concludes without adoption
+- **Periodic sync:** Run `--sync-linear` and `--sync-stars` monthly for discovery
+- **Before major upgrades:** Run `--ecosystem <name>` to check community sentiment
+
+### Categories
+
+| Status | Meaning |
+|--------|---------|
+| Active | Installed and used in production |
+| Evaluating | Trialling or POC stage |
+| Tracking | Watching for opportunities, not yet integrated |
+
 ## Linear Integration
 
-Project: Alteri (CIA-) - 106 issues across 8 development phases
+Project: Alteri (CIA-*) - 113 issues across 12 modules
 Create issues for new work, reference existing issues in commits.
+
+### Decision Tracking (Linear-Native)
+
+Tool and approach decisions are tracked directly in Linear with structured labels and templates.
+
+**Labels:**
+| Label | Meaning |
+|-------|---------|
+| `decision` | Issue contains a tool/approach decision |
+| `decision:pending` | Actively evaluating, decision needed |
+| `decision:decided` | Decision made, implementing chosen option |
+| `decision:revisit` | Decision made but flagged for reassessment |
+
+**CLI Commands:**
+```bash
+export LINEAR_ACCESS_TOKEN="..."  # Required
+
+./scripts/alteri-deps.sh --decisions          # List all decisions
+./scripts/alteri-deps.sh --decision CIA-110   # Show specific decision
+./scripts/alteri-deps.sh --decisions-pending  # Decisions needing attention
+./scripts/alteri-deps.sh --check-triggers     # Scan for fired reassess triggers
+```
+
+**Workflow:**
+1. **Creating a decision:** Add `decision` + `decision:pending` labels, use template
+2. **Making a decision:** Update description with rationale, change to `decision:decided`
+3. **Reassessment needed:** Change to `decision:revisit`, add comment explaining trigger
+4. **Monthly review:** Run `--check-triggers` to catch stale decisions
+
+**Issue Description Template for Decisions:**
+```markdown
+## Decision: [Title]
+
+**Module:** [Module X]
+**Status:** pending | decided | revisit
+
+---
+
+## Options
+
+### Option A: [Name]
+**Pros:** - Pro 1, Pro 2
+**Cons:** - Con 1, Con 2
+**Cost:** free | $X/mo | usage-based
+
+---
+
+## Rationale
+[Filled when decided]
+
+## Reassess Triggers
+- [ ] Trigger 1 (e.g., "Power BI MCP released")
+- [ ] Trigger 2 (e.g., "Cost exceeds $50/mo")
+```
 
 ## Framework Colours
 
