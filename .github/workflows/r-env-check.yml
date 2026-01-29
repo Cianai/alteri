@@ -12,6 +12,7 @@ on:
 jobs:
   check-renv:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: packages/r-analysis
@@ -26,6 +27,7 @@ jobs:
 
       - name: Cache R packages
         uses: actions/cache@v4
+        id: cache-renv
         with:
           path: |
             ~/.local/share/renv
@@ -39,10 +41,15 @@ jobs:
         shell: Rscript {0}
 
       - name: Restore R packages
-        run: renv::restore()
+        timeout-minutes: 15
+        run: |
+          options(renv.config.install.verbose = TRUE)
+          options(renv.download.trace = TRUE)
+          renv::restore(prompt = FALSE)
         shell: Rscript {0}
 
       - name: Check renv status
+        timeout-minutes: 2
         run: |
           status <- renv::status()
           if (!is.null(status$library$Packages) && nrow(status$library$Packages) > 0) {
@@ -54,6 +61,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Verify PSYNETS packages
+        timeout-minutes: 5
         run: |
           psynets <- c("bootnet", "BGGM", "gimme", "NetworkComparisonTest",
                        "networktools", "EGAnet", "lvnet")
@@ -67,6 +75,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Check for outdated packages
+        timeout-minutes: 5
         run: |
           old <- renv::update(check = TRUE)
           if (length(old) > 0) {
