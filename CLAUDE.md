@@ -196,6 +196,36 @@ Strategic visibility into active, evaluating, and tracked dependencies beyond lo
 | Evaluating | Trialling or POC stage |
 | Tracking | Watching for opportunities, not yet integrated |
 
+## Execution Environment
+
+This repo uses the Spec-to-Swarm automated workflow. Specs in `docs/specs/` trigger Claude Code implementation on merge.
+
+### Environment Selection
+
+| Label | Environment | When to Use |
+|-------|-------------|-------------|
+| `exec:quick` | Desktop | Simple features, quick fixes |
+| `exec:tdd` | Desktop | Test-driven work, iterative |
+| `exec:pair` | Desktop | Uncertain scope, needs discussion |
+| `exec:checkpoint` | Desktop | High-risk, approval gates |
+| `exec:swarm` | Terminal | Multi-agent parallel execution |
+| `exec:long-running` | Terminal | >30 min expected runtime |
+| `exec:batch` | Terminal | 50+ items to process |
+
+**Terminal-only triggers:** Any task estimated >30 minutes or involving bulk operations (Zotero cleanup, mass file processing) should use Terminal with session management.
+
+### Spec Frontmatter
+
+When creating specs for `docs/specs/`:
+```yaml
+---
+linear: CIA-123
+exec: swarm
+env: terminal  # optional, inferred from exec label
+status: ready
+---
+```
+
 ## Linear Integration
 
 Project: Alteri (CIA-*) - 113 issues across 12 modules
@@ -276,15 +306,30 @@ The system prompts encode specific alignment philosophies derived from:
 
 **Do not modify system prompts without explicit instruction** — they are versioned and changes must be deliberate and documented.
 
+## Verification Gate (MANDATORY)
+
+Before claiming ANY task complete, you MUST run and show evidence of:
+
+```bash
+pnpm typecheck    # Must pass
+pnpm test         # Must pass
+pnpm lint         # Must pass
+```
+
+Do not claim "done", "fixed", "complete", or "working" without showing verification output. This is non-negotiable.
+
+Use `superpowers:verification-before-completion` skill for comprehensive verification workflows.
+
 ## Do Not
 
-1. **Modify system prompts** without explicit instruction
-2. **Skip handover documentation** after completing significant work
-3. **Use default Tailwind colours** for framework-specific elements
-4. **Remove content warnings** or crisis resource links
-5. **Add console.log statements** to production code paths
-6. **Commit .env files** or expose secrets
-7. **Use outdated library patterns** without checking Context7 first
+1. **Claim completion without verification** — run typecheck, test, lint first
+2. **Modify system prompts** without explicit instruction
+3. **Skip handover documentation** after completing significant work
+4. **Use default Tailwind colours** for framework-specific elements
+5. **Remove content warnings** or crisis resource links
+6. **Add console.log statements** to production code paths
+7. **Commit .env files** or expose secrets
+8. **Use outdated library patterns** without checking Context7 first
 
 ## File References
 
