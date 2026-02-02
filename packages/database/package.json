@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@alignment-comparator/shared": "workspace:*",
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.93.3"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
