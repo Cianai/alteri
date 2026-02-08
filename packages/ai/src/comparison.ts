@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 import { providers } from './providers';
-import type { Framework } from '@alignment-comparator/shared';
+import type { Framework } from '@alteri/shared';
 
 export interface ComparisonResult {
   frameworkA: {

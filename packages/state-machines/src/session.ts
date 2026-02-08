@@ -3,7 +3,7 @@ import type {
   SessionPhase,
   DemographicsData,
   NetworkData,
-} from '@alignment-comparator/shared';
+} from '@alteri/shared';
 
 /** Events for session state machine */
 type SessionEvent =

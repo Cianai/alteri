@@ -1,6 +1,6 @@
 /**
  * Database package for Supabase integration
- * @module @alignment-comparator/database
+ * @module @alteri/database
  */
 
 export * from './client';

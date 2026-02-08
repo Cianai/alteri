@@ -1,6 +1,6 @@
 /**
  * AI package for Vercel AI SDK patterns
- * @module @alignment-comparator/ai
+ * @module @alteri/ai
  */
 
 export * from './providers';

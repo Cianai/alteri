@@ -174,6 +174,53 @@ export type Database = {
           },
         ]
       }
+      notebook_sources: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          notebook_id: string
+          notebook_name: string | null
+          paper_id: string
+          processed_at: string | null
+          processing_status: string
+          source_type: string
+          source_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notebook_id: string
+          notebook_name?: string | null
+          paper_id: string
+          processed_at?: string | null
+          processing_status?: string
+          source_type: string
+          source_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notebook_id?: string
+          notebook_name?: string | null
+          paper_id?: string
+          processed_at?: string | null
+          processing_status?: string
+          source_type?: string
+          source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_sources_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "research_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       participants: {
         Row: {
           consented_at: string | null
@@ -198,6 +245,163 @@ export type Database = {
           metadata?: Json | null
           pseudonym_id?: string
           withdrawn_at?: string | null
+        }
+        Relationships: []
+      }
+      research_papers: {
+        Row: {
+          abstract: string | null
+          api_metadata: Json | null
+          arxiv_id: string | null
+          authors: Json | null
+          created_at: string
+          doi: string | null
+          id: string
+          journal: string | null
+          keywords: string[] | null
+          pmid: string | null
+          promoted_at: string | null
+          publication_date: string | null
+          rejection_reason: string | null
+          semantic_scholar_id: string | null
+          source_api: string
+          stage: string
+          stage_changed_at: string | null
+          title: string
+          updated_at: string
+          zotero_key: string | null
+        }
+        Insert: {
+          abstract?: string | null
+          api_metadata?: Json | null
+          arxiv_id?: string | null
+          authors?: Json | null
+          created_at?: string
+          doi?: string | null
+          id?: string
+          journal?: string | null
+          keywords?: string[] | null
+          pmid?: string | null
+          promoted_at?: string | null
+          publication_date?: string | null
+          rejection_reason?: string | null
+          semantic_scholar_id?: string | null
+          source_api: string
+          stage?: string
+          stage_changed_at?: string | null
+          title: string
+          updated_at?: string
+          zotero_key?: string | null
+        }
+        Update: {
+          abstract?: string | null
+          api_metadata?: Json | null
+          arxiv_id?: string | null
+          authors?: Json | null
+          created_at?: string
+          doi?: string | null
+          id?: string
+          journal?: string | null
+          keywords?: string[] | null
+          pmid?: string | null
+          promoted_at?: string | null
+          publication_date?: string | null
+          rejection_reason?: string | null
+          semantic_scholar_id?: string | null
+          source_api?: string
+          stage?: string
+          stage_changed_at?: string | null
+          title?: string
+          updated_at?: string
+          zotero_key?: string | null
+        }
+        Relationships: []
+      }
+      research_session_papers: {
+        Row: {
+          added_at: string
+          discovery_method: string | null
+          id: string
+          notes: string | null
+          paper_id: string
+          relevance_score: number | null
+          session_id: string
+          source_paper_id: string | null
+        }
+        Insert: {
+          added_at?: string
+          discovery_method?: string | null
+          id?: string
+          notes?: string | null
+          paper_id: string
+          relevance_score?: number | null
+          session_id: string
+          source_paper_id?: string | null
+        }
+        Update: {
+          added_at?: string
+          discovery_method?: string | null
+          id?: string
+          notes?: string | null
+          paper_id?: string
+          relevance_score?: number | null
+          session_id?: string
+          source_paper_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_session_papers_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "research_papers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_session_papers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "research_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_session_papers_source_paper_id_fkey"
+            columns: ["source_paper_id"]
+            isOneToOne: false
+            referencedRelation: "research_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_sessions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          keywords: string[] | null
+          name: string
+          research_questions: string[] | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          name: string
+          research_questions?: string[] | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          name?: string
+          research_questions?: string[] | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -341,15 +545,42 @@ export type TablesUpdate<
       : never
     : never
 
-/** Convenience type aliases for common tables */
-export type Participant = Tables<'participants'>
-export type Session = Tables<'sessions'>
-export type Comparison = Tables<'comparisons'>
-export type Evaluation = Tables<'evaluations'>
-export type Demographics = Tables<'demographics'>
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
-export type ParticipantInsert = TablesInsert<'participants'>
-export type SessionInsert = TablesInsert<'sessions'>
-export type ComparisonInsert = TablesInsert<'comparisons'>
-export type EvaluationInsert = TablesInsert<'evaluations'>
-export type DemographicsInsert = TablesInsert<'demographics'>
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

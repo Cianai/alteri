@@ -1,5 +1,5 @@
 {
-  "name": "@alignment-comparator/database",
+  "name": "@alteri/database",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -11,7 +11,7 @@
     "db:migrate": "supabase db push"
   },
   "dependencies": {
-    "@alignment-comparator/shared": "workspace:*",
+    "@alteri/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {

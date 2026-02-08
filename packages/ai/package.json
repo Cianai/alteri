@@ -1,5 +1,5 @@
 {
-  "name": "@alignment-comparator/ai",
+  "name": "@alteri/ai",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.14",
     "@ai-sdk/openai": "^3.0.11",
-    "@alignment-comparator/shared": "workspace:*",
+    "@alteri/shared": "workspace:*",
     "ai": "^6.0.37"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 /**
- * Shared types and utilities for Alignment Comparator platform
- * @module @alignment-comparator/shared
+ * Shared types and utilities for Alteri platform
+ * @module @alteri/shared
  */
 
 // Re-export types that will be shared across packages

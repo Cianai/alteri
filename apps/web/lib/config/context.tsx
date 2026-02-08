@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useMachine } from '@xstate/react'
-import { configMachine } from '@alignment-comparator/state-machines'
+import { configMachine } from '@alteri/state-machines'
 import type {
   ConfigRegistry,
   ThemeVariant,

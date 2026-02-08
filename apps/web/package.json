@@ -1,5 +1,5 @@
 {
-  "name": "@alignment-comparator/web",
+  "name": "@alteri/web",
   "version": "0.1.0",
   "private": true,
   "description": "Conversational research platform comparing AI alignment frameworks",
@@ -13,8 +13,9 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.14",
     "@ai-sdk/openai": "^3.0.11",
-    "@alignment-comparator/shared": "workspace:*",
-    "@alignment-comparator/state-machines": "workspace:*",
+    "@alteri/shared": "workspace:*",
+    "@alteri/state-machines": "workspace:*",
+    "@alteri/voice-intake": "workspace:*",
     "@assistant-ui/react": "^0.7.0",
     "@assistant-ui/react-ai-sdk": "^0.7.0",
     "@radix-ui/react-checkbox": "^1.3.3",

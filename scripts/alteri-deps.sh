@@ -32,7 +32,9 @@ usage() {
     echo "  --promote <name>    Move from evaluating → active"
     echo "  --archive <name>    Move from evaluating → tracking"
     echo "  --sync-linear       Pull dependency-tagged issues from Linear"
-    echo "  --sync-stars        Pull starred GitHub repos into tracking"
+    echo "  --sync-stars        Pull from curated GitHub Lists into tracking"
+    echo "  --sync-all-stars    Auto-capture ALL starred repos (discovers new stars)"
+    echo "  --auto-update       Check for updates, auto-merge patches, PR minors"
     echo "  --ecosystem <name>  Search ecosystem for news/best practices"
     echo ""
     echo -e "${CYAN}Decision Commands (Linear-native):${NC}"
@@ -325,8 +327,8 @@ sync_stars() {
         exit 1
     fi
 
-    # Only sync from these 3 curated lists
-    local target_lists=("Analytics" "NetworksCourses" "MAI")
+    # Sync from curated GitHub Lists (use actual list names)
+    local target_lists=("BI & Analytics" "Networks & R" "Alteri" "NotebookLM & Zotero")
 
     echo "Fetching GitHub Lists via GraphQL..."
     echo ""
@@ -373,34 +375,355 @@ sync_stars() {
     echo -e "${BOLD}Key findings for tracking:${NC}"
 
     # Extract notable repos for each category
-    echo -e "${CYAN}Analytics tools:${NC}"
+    echo -e "${CYAN}BI & Analytics:${NC}"
     echo "$lists_data" | jq -r '
         .data.viewer.lists.nodes[] |
-        select(.name == "Analytics") |
+        select(.name == "BI & Analytics") |
         .items.nodes[] |
         "  - \(.nameWithOwner): \(.description // "–")"
     ' | head -5
 
     echo ""
-    echo -e "${CYAN}R Network packages:${NC}"
+    echo -e "${CYAN}Networks & R:${NC}"
     echo "$lists_data" | jq -r '
         .data.viewer.lists.nodes[] |
-        select(.name == "NetworksCourses") |
+        select(.name == "Networks & R") |
         .items.nodes[] |
         "  - \(.nameWithOwner): \(.description // "–")"
     ' | head -5
 
     echo ""
-    echo -e "${CYAN}AI/ML tools:${NC}"
+    echo -e "${CYAN}Alteri-specific:${NC}"
     echo "$lists_data" | jq -r '
         .data.viewer.lists.nodes[] |
-        select(.name == "MAI") |
+        select(.name == "Alteri") |
+        .items.nodes[] |
+        "  - \(.nameWithOwner): \(.description // "–")"
+    ' | head -5
+
+    echo ""
+    echo -e "${CYAN}NotebookLM & Zotero:${NC}"
+    echo "$lists_data" | jq -r '
+        .data.viewer.lists.nodes[] |
+        select(.name == "NotebookLM & Zotero") |
         .items.nodes[] |
         "  - \(.nameWithOwner): \(.description // "–")"
     ' | head -5
 
     echo ""
     echo -e "${YELLOW}Run --ecosystem <name> to research specific tools before adding to manifest.${NC}"
+}
+
+# Sync ALL starred repos (automatic capture of new stars)
+sync_all_stars() {
+    check_deps_file
+
+    echo -e "${BOLD}=== Syncing ALL Starred Repos ===${NC}"
+    echo ""
+
+    if ! command -v gh &> /dev/null; then
+        echo -e "${RED}Error: gh CLI not installed${NC}"
+        exit 1
+    fi
+
+    echo "Fetching all starred repositories..."
+    echo ""
+
+    # Get all starred repos with metadata
+    local starred_repos
+    starred_repos=$(gh api user/starred --paginate --jq '.[] | {
+        name: .full_name,
+        description: (.description // "No description"),
+        language: (.language // "unknown"),
+        stars: .stargazers_count,
+        url: .html_url,
+        topics: .topics
+    }' 2>/dev/null)
+
+    if [[ -z "$starred_repos" ]]; then
+        echo -e "${YELLOW}Could not fetch starred repos.${NC}"
+        return
+    fi
+
+    # Get currently tracked repos from manifest (all categories, all statuses)
+    local existing_repos
+    existing_repos=$(jq -r '
+        [
+            (.javascript.active // {} | to_entries[] | .value.repo // .key),
+            (.javascript.evaluating // {} | to_entries[] | .value.repo // .key),
+            (.javascript.tracking // {} | to_entries[] | .value.repo // .key),
+            (.r.active // {} | to_entries[] | .value.repo // .key),
+            (.r.evaluating // {} | to_entries[] | .value.repo // .key),
+            (.r.tracking // {} | to_entries[] | .value.repo // .key),
+            (.services.active // {} | to_entries[] | .value.repo // .key),
+            (.services.evaluating // {} | to_entries[] | .value.repo // .key),
+            (.services.tracking // {} | to_entries[] | .value.repo // .key),
+            (.mcp.active // {} | to_entries[] | .value.repo // .key),
+            (.mcp.evaluating // {} | to_entries[] | .value.repo // .key),
+            (.mcp.tracking // {} | to_entries[] | .value.repo // .key)
+        ] | .[]
+    ' "$DEPS_FILE" 2>/dev/null | tr '[:upper:]' '[:lower:]' | sort | uniq)
+
+    local added=0
+    local skipped=0
+    local new_repos=""
+
+    echo -e "${CYAN}Categorising by language/topic...${NC}"
+    echo ""
+
+    while IFS= read -r repo_json; do
+        [[ -z "$repo_json" ]] && continue
+
+        local name=$(echo "$repo_json" | jq -r '.name')
+        local name_lower=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+        local language=$(echo "$repo_json" | jq -r '.language')
+        local description=$(echo "$repo_json" | jq -r '.description')
+        local stars=$(echo "$repo_json" | jq -r '.stars')
+        local topics=$(echo "$repo_json" | jq -r '.topics | join(",")')
+
+        # Check if already tracked (by full repo name)
+        if echo "$existing_repos" | grep -qF "$name_lower"; then
+            ((skipped++))
+            continue
+        fi
+
+        # Categorise by language and topics
+        local category="services"  # default
+        case "$language" in
+            TypeScript|JavaScript)
+                if [[ "$topics" == *"mcp"* ]] || [[ "$name" == *"mcp"* ]]; then
+                    category="mcp"
+                else
+                    category="javascript"
+                fi
+                ;;
+            R)
+                category="r"
+                ;;
+            Python)
+                if [[ "$topics" == *"mcp"* ]] || [[ "$name" == *"mcp"* ]]; then
+                    category="mcp"
+                else
+                    category="services"
+                fi
+                ;;
+            *)
+                if [[ "$topics" == *"mcp"* ]] || [[ "$name" == *"mcp"* ]]; then
+                    category="mcp"
+                fi
+                ;;
+        esac
+
+        # Add to new repos list
+        new_repos="${new_repos}${category}|${name}|${description}|${stars}\n"
+        ((added++))
+
+    done < <(echo "$starred_repos" | jq -c '.')
+
+    # Report findings
+    echo -e "${BOLD}Summary:${NC}"
+    echo -e "  ${GREEN}New repos found:${NC} $added"
+    echo -e "  ${YELLOW}Already tracked:${NC} $skipped"
+    echo ""
+
+    if [[ $added -gt 0 ]]; then
+        echo -e "${BOLD}New repos to add (by category):${NC}"
+        echo ""
+
+        for cat in javascript r services mcp; do
+            local cat_repos=$(echo -e "$new_repos" | grep "^${cat}|" | head -10)
+            if [[ -n "$cat_repos" ]]; then
+                echo -e "${CYAN}[$cat]${NC}"
+                echo "$cat_repos" | while IFS='|' read -r _ name desc stars; do
+                    echo -e "  ${GREEN}+${NC} $name (${stars} ★)"
+                    echo "    $desc" | head -c 80
+                    echo ""
+                done
+                echo ""
+            fi
+        done
+
+        echo -e "${YELLOW}To add these to tracking, run:${NC}"
+        echo "  $0 --add-starred"
+    else
+        echo -e "${GREEN}All starred repos are already tracked!${NC}"
+    fi
+}
+
+# Auto-update: check for updates and create PRs/issues based on semver
+auto_update() {
+    check_deps_file
+
+    echo -e "${BOLD}=== Auto-Update Check ===${NC}"
+    echo ""
+
+    local repo_root
+    repo_root=$(dirname "$(dirname "$DEPS_FILE")")
+
+    # Check if we're in a git repo
+    if ! git -C "$repo_root" rev-parse --git-dir > /dev/null 2>&1; then
+        echo -e "${RED}Error: Not in a git repository${NC}"
+        exit 1
+    fi
+
+    echo -e "${CYAN}Checking npm dependencies...${NC}"
+    echo ""
+
+    local package_json="$repo_root/package.json"
+    if [[ ! -f "$package_json" ]]; then
+        echo -e "${YELLOW}No package.json found${NC}"
+        return
+    fi
+
+    # Get outdated packages
+    local outdated
+    outdated=$(cd "$repo_root" && pnpm outdated --format json 2>/dev/null || npm outdated --json 2>/dev/null || echo "{}")
+
+    if [[ "$outdated" == "{}" ]] || [[ -z "$outdated" ]]; then
+        echo -e "${GREEN}All npm packages up to date!${NC}"
+    else
+        local patch_updates=""
+        local minor_updates=""
+        local major_updates=""
+
+        # Parse outdated packages
+        echo "$outdated" | jq -r 'to_entries[] | "\(.key)|\(.value.current // "?")|\(.value.latest // "?")"' 2>/dev/null | while IFS='|' read -r pkg current latest; do
+            [[ -z "$pkg" ]] && continue
+
+            # Determine update type based on semver
+            local current_major current_minor latest_major latest_minor
+            current_major=$(echo "$current" | cut -d'.' -f1 | tr -d '^~')
+            current_minor=$(echo "$current" | cut -d'.' -f2)
+            latest_major=$(echo "$latest" | cut -d'.' -f1)
+            latest_minor=$(echo "$latest" | cut -d'.' -f2)
+
+            if [[ "$latest_major" != "$current_major" ]]; then
+                echo -e "  ${RED}MAJOR${NC} $pkg: $current → $latest"
+                major_updates="${major_updates}${pkg}|${current}|${latest}\n"
+            elif [[ "$latest_minor" != "$current_minor" ]]; then
+                echo -e "  ${YELLOW}MINOR${NC} $pkg: $current → $latest"
+                minor_updates="${minor_updates}${pkg}|${current}|${latest}\n"
+            else
+                echo -e "  ${GREEN}PATCH${NC} $pkg: $current → $latest"
+                patch_updates="${patch_updates}${pkg}|${current}|${latest}\n"
+            fi
+        done
+
+        echo ""
+        echo -e "${BOLD}Auto-Update Actions:${NC}"
+        echo ""
+
+        # Handle PATCH updates: auto-create branch, update, test, merge
+        if [[ -n "$patch_updates" ]]; then
+            echo -e "${GREEN}PATCH updates (auto-merge if tests pass):${NC}"
+            local branch_name="deps/patch-updates-$(date +%Y%m%d)"
+
+            echo "  Creating branch: $branch_name"
+            git -C "$repo_root" checkout -b "$branch_name" 2>/dev/null || true
+
+            echo "  Running: pnpm update (patch only)"
+            (cd "$repo_root" && pnpm update 2>/dev/null) || true
+
+            echo "  Running tests..."
+            local test_result=0
+            (cd "$repo_root" && pnpm test 2>/dev/null) || test_result=$?
+
+            if [[ $test_result -eq 0 ]]; then
+                echo -e "  ${GREEN}✓${NC} Tests passed"
+                echo "  Committing changes..."
+                git -C "$repo_root" add package.json pnpm-lock.yaml 2>/dev/null
+                git -C "$repo_root" commit -m "deps: patch updates $(date +%Y-%m-%d)
+
+Auto-merged by alteri-deps.sh --auto-update" 2>/dev/null
+
+                echo "  Pushing and creating PR with auto-merge label..."
+                git -C "$repo_root" push -u origin "$branch_name" 2>/dev/null
+
+                gh pr create \
+                    --repo "$(git -C "$repo_root" remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')" \
+                    --title "deps: patch updates $(date +%Y-%m-%d)" \
+                    --body "Automated patch updates.
+
+## Changes
+$(echo -e "$patch_updates" | while IFS='|' read -r pkg cur lat; do echo "- $pkg: $cur → $lat"; done)
+
+## Auto-merge
+This PR will be auto-merged if CI passes.
+
+---
+*Created by \`alteri-deps.sh --auto-update\`*" \
+                    --label "dependencies,auto-merge" 2>/dev/null || echo "  PR creation requires gh auth"
+            else
+                echo -e "  ${RED}✗${NC} Tests failed - reverting"
+                git -C "$repo_root" checkout main 2>/dev/null
+                git -C "$repo_root" branch -D "$branch_name" 2>/dev/null
+            fi
+        fi
+
+        # Handle MINOR updates: create PR, wait for CI
+        if [[ -n "$minor_updates" ]]; then
+            echo ""
+            echo -e "${YELLOW}MINOR updates (PR + CI, auto-merge if green):${NC}"
+            echo "  Creating Linear issue with exec:quick label..."
+
+            # Create Linear issue for minor updates
+            if [[ -n "$LINEAR_ACCESS_TOKEN" ]]; then
+                local issue_title="deps: minor updates $(date +%Y-%m-%d)"
+                local issue_body="Minor dependency updates detected.
+
+## Packages
+$(echo -e "$minor_updates" | while IFS='|' read -r pkg cur lat; do echo "- $pkg: $cur → $lat"; done)
+
+## Action
+Review changelogs and merge if safe."
+
+                curl -s -X POST https://api.linear.app/graphql \
+                    -H "Authorization: $LINEAR_ACCESS_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"query\": \"mutation { issueCreate(input: { title: \\\"$issue_title\\\", description: \\\"$issue_body\\\", teamId: \\\"YOUR_TEAM_ID\\\", labelIds: [\\\"exec:quick\\\"] }) { success } }\"}" \
+                    2>/dev/null | jq -r '.data.issueCreate.success' || echo "  Linear issue creation failed"
+            else
+                echo "  LINEAR_ACCESS_TOKEN not set - skipping Linear issue"
+            fi
+        fi
+
+        # Handle MAJOR updates: create Linear issue with decision:pending
+        if [[ -n "$major_updates" ]]; then
+            echo ""
+            echo -e "${RED}MAJOR updates (manual review required):${NC}"
+            echo "  Creating Linear issue with decision:pending label..."
+
+            if [[ -n "$LINEAR_ACCESS_TOKEN" ]]; then
+                local issue_title="decision: major dependency updates $(date +%Y-%m-%d)"
+                local issue_body="⚠️ Major dependency updates require manual review.
+
+## Breaking Changes Possible
+$(echo -e "$major_updates" | while IFS='|' read -r pkg cur lat; do echo "- **$pkg**: $cur → $lat"; done)
+
+## Action Required
+1. Review changelogs for breaking changes
+2. Test locally before merging
+3. Update code if API changes"
+
+                curl -s -X POST https://api.linear.app/graphql \
+                    -H "Authorization: $LINEAR_ACCESS_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"query\": \"mutation { issueCreate(input: { title: \\\"$issue_title\\\", description: \\\"$issue_body\\\", teamId: \\\"YOUR_TEAM_ID\\\", labelIds: [\\\"decision:pending\\\"] }) { success } }\"}" \
+                    2>/dev/null | jq -r '.data.issueCreate.success' || echo "  Linear issue creation failed"
+            else
+                echo "  LINEAR_ACCESS_TOKEN not set - skipping Linear issue"
+            fi
+        fi
+    fi
+
+    # Return to main branch
+    git -C "$repo_root" checkout main 2>/dev/null || git -C "$repo_root" checkout master 2>/dev/null
+
+    echo ""
+    echo -e "${BOLD}Summary:${NC}"
+    echo "  Patch: auto-merge if tests pass"
+    echo "  Minor: PR created, auto-merge after CI"
+    echo "  Major: Linear issue created for manual review"
 }
 
 # Ecosystem intelligence search
@@ -719,6 +1042,12 @@ case "$1" in
         ;;
     --sync-stars)
         sync_stars
+        ;;
+    --sync-all-stars)
+        sync_all_stars
+        ;;
+    --auto-update)
+        auto_update
         ;;
     --ecosystem)
         if [[ $# -lt 2 ]]; then

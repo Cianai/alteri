@@ -1,5 +1,5 @@
 {
-  "name": "@alignment-comparator/shared",
+  "name": "@alteri/shared",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
