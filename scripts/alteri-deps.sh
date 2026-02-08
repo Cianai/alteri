@@ -328,7 +328,7 @@ sync_stars() {
     fi
 
     # Sync from curated GitHub Lists (use actual list names)
-    local target_lists=("BI & Analytics" "Networks & R" "Alteri" "NotebookLM & Zotero")
+    local target_lists=("BI & Analytics" "Networks & R" "Alteri" "Zotero")
 
     echo "Fetching GitHub Lists via GraphQL..."
     echo ""
