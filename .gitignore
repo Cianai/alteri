@@ -48,6 +48,9 @@ coverage/
 # Supabase
 .supabase/
 
+# R analysis data (symlinked to Obsidian vault)
+packages/r-analysis/data/
+
 # Misc
 *.log
 *.pid

@@ -15,16 +15,35 @@ Rscript -e "renv::restore()"
 
 ## Claude Code Integration (Full Execution)
 
-Claude Code has full access to this R environment via MCP servers. Three modes available:
+Claude Code has full access to this R environment via MCP servers. Four modes available:
 
-### Mode 1: Documentation Lookup (r-btw, isolated)
+### Mode 1: Autonomous Network Analysis (r-network, NEW)
+Claude executes network functions directly without human session:
+```
+Claude Code → r-network MCP → mcp-server.R → bootnet/qgraph/psychonetrics
+```
+**Use for:** Automated analysis, batch processing, autonomous development.
+
+**Available tools:**
+- `estimate_network` - Estimate psychological network (EBICglasso, pcor, ggmModSelect)
+- `check_stability` - Bootstrap stability analysis (CS-coefficient)
+- `plot_network` - Generate qgraph visualisation (PNG output)
+- `compare_networks` - Network Comparison Test between groups
+
+**When to use autonomous mode:**
+- Running predefined analyses
+- Batch processing multiple datasets
+- CI/CD pipeline integration
+- When human review not needed
+
+### Mode 2: Documentation Lookup (r-btw, isolated)
 Spawns fresh R process for documentation queries:
 ```
 Claude Code → r-btw MCP → btw::btw_mcp_server() → R docs
 ```
 Use for: Package help, vignettes, function signatures. Always available.
 
-### Mode 2: Live Session Bridge (r-session, connected)
+### Mode 3: Live Session Bridge (r-session, connected)
 Connects to your running Positron session via mcptools session discovery:
 ```
 Positron → mcptools::mcp_session() → [registered]
@@ -44,12 +63,27 @@ Claude Code → r-session MCP → list_r_sessions() → select_r_session() → Y
 - See results of your interactive work
 - Access loaded data without re-loading
 
-### Mode 3: Positron Assistant (Inline)
+### Mode 4: Positron Assistant (Inline)
 Native Positron AI with direct session access (no MCP required):
 ```
 Positron Assistant → Native R session access → Inline completions + chat
 ```
 Use for: Quick exploratory analysis, inline completions, rapid iteration.
+
+## Workflow Mode Selection
+
+| Mode | MCP | Use Case | Human-in-Loop |
+|------|-----|----------|---------------|
+| **Autonomous** | r-network | Predefined analyses, batch processing | No |
+| **Pair Programming** | r-session | Interactive exploration, debugging | Yes |
+| **Documentation** | r-btw | Package help, vignettes | No |
+| **Inline** | None (Positron) | Quick completions, chat | Yes |
+
+**Decision heuristic:**
+- Known analysis on known data → **r-network** (autonomous)
+- Exploratory analysis, debugging → **r-session** (pair programming)
+- Need package documentation → **r-btw**
+- Quick inline questions → **Positron Assistant**
 
 ## Hybrid Pair Programming Workflow
 
@@ -57,11 +91,13 @@ Use both Claude Code and Positron Assistant together:
 
 | Tool | Best For | R Session Access |
 |------|----------|------------------|
+| **Claude Code (r-network)** | Automated network analysis, batch runs | Isolated (own process) |
 | **Positron Assistant** | Quick questions, inline completions, exploratory analysis | Native (always connected) |
 | **Claude Code (r-session)** | Multi-file changes, documentation, testing, planning | Via session discovery |
 | **Claude Code (r-btw)** | Documentation lookup when session not needed | Isolated process |
 
 **Role Division:**
+- r-network: "Run stability analysis on this dataset" "Compare networks between groups"
 - Positron Assistant: "What does this error mean?" "Complete this dplyr chain"
 - Claude Code: "Refactor analysis across 3 scripts" "Write tests for this function"
 
@@ -179,6 +215,24 @@ Includes session discovery tools. Use for live session connection.
 - `data/psynets/day3-morning-data.rds` → Bayesian MRF exercise
 - `data/psynets/day3-afternoon-data.rds` → Structure priors exercise
 - `data/psynets/day4-panel-data.RData` → Panel VAR exercise
+
+### UAB Barcelona Workflow (2-6 Feb 2026)
+
+**Setup:** Run `source(here::here("scripts/uab/00_uab_setup.R"))` to verify environment.
+
+**Available Scripts:**
+| Day | Script | Topics |
+|-----|--------|--------|
+| Wed 4th | `data/uab/workshop-scripts/04_Composition.R` | Network composition measures |
+| Wed 4th | `data/uab/workshop-scripts/05_Structure.R` | Structural network measures |
+| Thu 5th | `data/uab/workshop-scripts/06_Multilevel.R` | Multilevel modeling |
+| Thu 5th | `data/uab/workshop-scripts/07_egor.R` | egor package workflows |
+
+**Data Symlinks:**
+- `data/uab/workshop-data/data.rda` → Main dataset (102 Sri Lankan immigrants, 45-alter networks)
+- `data/uab/workshop-data/codebook.xlsx` → Variable documentation
+- `data/uab/workshop-data/raw_data/` → CSV source files
+- `data/uab/workshop-scripts/` → Course R scripts (chapters 2-8)
 
 **Role Division:**
 - **You:** Theoretical interpretation, domain knowledge, research questions
