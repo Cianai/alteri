@@ -25,7 +25,14 @@ export async function extractConcept(transcript: string): Promise<ExtractionResu
   });
 
   const durationMs = Date.now() - start;
-  const rawJson = JSON.parse(result.text);
+
+  // Strip markdown code fences if the model wraps JSON in ```json ... ```
+  let text = result.text.trim();
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+  }
+
+  const rawJson = JSON.parse(text);
 
   // Validate required fields
   const concept = validateConcept(rawJson);
