@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIA-259: Visual Feedback Loop — Core Loop Flowchart</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+    h1 { text-align: center; font-size: 1.5rem; margin-bottom: 8px; color: #f8fafc; }
+    .subtitle { text-align: center; color: #94a3b8; font-size: 0.875rem; margin-bottom: 24px; }
+    .legend { display: flex; gap: 24px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #94a3b8; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+    svg { display: block; margin: 0 auto; }
+    text { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Subgraph labels */
+    .subgraph-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <h1>CIA-259: Visual Feedback Loop &mdash; Core Iteration Loop</h1>
+  <p class="subtitle">v0 MCP + Vercel Preview + Claude in Chrome &middot; Stages 5&ndash;7 Sub-Loop</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div> Start / End</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#3b82f6"></div> Process</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f59e0b"></div> Decision</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div> Escalation</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#8b5cf6"></div> Human Action</div>
+    <div class="legend-item"><div class="legend-swatch" style="border:2px dashed #475569; background:transparent"></div> Subgraph</div>
+  </div>
+
+  <svg viewBox="0 0 960 1520" width="960" height="1520" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 Z" fill="#64748b"/>
+      </marker>
+      <marker id="arrow-green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 Z" fill="#22c55e"/>
+      </marker>
+      <marker id="arrow-red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 Z" fill="#ef4444"/>
+      </marker>
+      <marker id="arrow-amber" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 Z" fill="#f59e0b"/>
+      </marker>
+      <marker id="arrow-purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 Z" fill="#8b5cf6"/>
+      </marker>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- ============================================ -->
+    <!-- SUBGRAPH: Generation (y: 30 – 370)           -->
+    <!-- ============================================ -->
+    <rect x="60" y="30" width="840" height="340" rx="12" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <text x="80" y="52" class="subgraph-label" fill="#475569">Generation</text>
+
+    <!-- START: Approved Spec -->
+    <rect x="370" y="65" width="220" height="44" rx="22" fill="#22c55e" opacity="0.9"/>
+    <text x="480" y="92" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Approved Spec (UI reqs)</text>
+
+    <!-- Decision: v0 MCP available? -->
+    <polygon points="480,145 560,185 480,225 400,185" fill="#f59e0b" opacity="0.9"/>
+    <text x="480" y="182" text-anchor="middle" fill="#0f172a" font-size="11" font-weight="600">v0 MCP</text>
+    <text x="480" y="195" text-anchor="middle" fill="#0f172a" font-size="11" font-weight="600">available?</text>
+
+    <!-- Arrow: Start → Decision -->
+    <line x1="480" y1="109" x2="480" y2="145" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Yes: v0 generate_component -->
+    <rect x="580" y="165" width="200" height="40" rx="6" fill="#3b82f6" opacity="0.9"/>
+    <text x="680" y="189" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">v0 generate_component</text>
+
+    <!-- No: Manual v0.dev UI -->
+    <rect x="180" y="165" width="200" height="40" rx="6" fill="#3b82f6" opacity="0.85"/>
+    <text x="280" y="189" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">Manual v0.dev UI</text>
+
+    <!-- Arrow: Decision → Yes -->
+    <line x1="560" y1="185" x2="580" y2="185" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+    <text x="566" y="178" fill="#22c55e" font-size="10" font-weight="600">Yes</text>
+
+    <!-- Arrow: Decision → No -->
+    <line x1="400" y1="185" x2="380" y2="185" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+    <text x="384" y="178" fill="#ef4444" font-size="10" font-weight="600">No</text>
+
+    <!-- Both converge to Adapt -->
+    <line x1="680" y1="205" x2="680" y2="255" stroke="#64748b" stroke-width="1.5"/>
+    <line x1="280" y1="205" x2="280" y2="255" stroke="#64748b" stroke-width="1.5"/>
+    <line x1="280" y1="255" x2="680" y2="255" stroke="#64748b" stroke-width="1.5"/>
+    <line x1="480" y1="255" x2="480" y2="275" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Adapt to alteri patterns (D7) -->
+    <rect x="310" y="275" width="340" height="50" rx="6" fill="#3b82f6" opacity="0.9"/>
+    <text x="480" y="296" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Claude Code: Adapt to alteri (D7)</text>
+    <text x="480" y="312" text-anchor="middle" fill="#dbeafe" font-size="10">XState v5 | Framework colours | SurveyJS | AI SDK</text>
+
+    <!-- ============================================ -->
+    <!-- SUBGRAPH: Deploy (y: 380 – 640)              -->
+    <!-- ============================================ -->
+    <rect x="60" y="380" width="840" height="260" rx="12" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <text x="80" y="402" class="subgraph-label" fill="#475569">Deploy</text>
+
+    <!-- Write to branch + Push -->
+    <rect x="340" y="415" width="280" height="44" rx="6" fill="#3b82f6" opacity="0.9"/>
+    <text x="480" y="442" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">Write to feature branch + Push</text>
+
+    <!-- Arrow: Adapt → Push -->
+    <line x1="480" y1="325" x2="480" y2="415" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Vercel auto-deploys -->
+    <rect x="340" y="485" width="280" height="40" rx="6" fill="#3b82f6" opacity="0.85"/>
+    <text x="480" y="509" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">Vercel auto-deploys preview</text>
+
+    <!-- Arrow: Push → Deploy -->
+    <line x1="480" y1="459" x2="480" y2="485" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Decision: Deploy successful? -->
+    <polygon points="480,555 555,590 480,625 405,590" fill="#f59e0b" opacity="0.9"/>
+    <text x="480" y="587" text-anchor="middle" fill="#0f172a" font-size="11" font-weight="600">Deploy</text>
+    <text x="480" y="600" text-anchor="middle" fill="#0f172a" font-size="11" font-weight="600">OK?</text>
+
+    <!-- Arrow: Deploy → Decision -->
+    <line x1="480" y1="525" x2="480" y2="555" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- No: Check build logs -->
+    <rect x="620" y="570" width="170" height="40" rx="6" fill="#ef4444" opacity="0.85"/>
+    <text x="705" y="594" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">Check build logs</text>
+
+    <!-- Arrow: Decision → No -->
+    <line x1="555" y1="590" x2="620" y2="590" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+    <text x="575" y="583" fill="#ef4444" font-size="10" font-weight="600">No</text>
+
+    <!-- Decision: 2nd failure? -->
+    <polygon points="705,640 755,660 705,680 655,660" fill="#f59e0b" opacity="0.8"/>
+    <text x="705" y="664" text-anchor="middle" fill="#0f172a" font-size="9" font-weight="600">2nd fail?</text>
+
+    <!-- Arrow: Check → 2nd fail -->
+    <line x1="705" y1="610" x2="705" y2="640" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Yes: Escalate -->
+    <rect x="775" y="643" width="110" height="34" rx="6" fill="#ef4444" opacity="0.9"/>
+    <text x="830" y="664" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Escalate</text>
+
+    <!-- Arrow: 2nd fail → Yes escalate -->
+    <line x1="755" y1="660" x2="775" y2="660" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+    <text x="762" y="653" fill="#ef4444" font-size="9" font-weight="600">Yes</text>
+
+    <!-- No: Fix + push again (loop back) -->
+    <text x="690" y="700" fill="#22c55e" font-size="9" font-weight="600">No: Fix + Push</text>
+    <path d="M 680,680 L 680,710 L 430,710 L 430,440 L 460,440" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-green)"/>
+
+    <!-- ============================================ -->
+    <!-- SUBGRAPH: Capture & Analyse (y: 650 – 960)   -->
+    <!-- ============================================ -->
+    <rect x="60" y="730" width="840" height="300" rx="12" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <text x="80" y="752" class="subgraph-label" fill="#475569">Capture &amp; Analyse</text>
+
+    <!-- Arrow: Deploy OK → Capture -->
+    <line x1="480" y1="625" x2="480" y2="770" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+    <text x="488" y="640" fill="#22c55e" font-size="10" font-weight="600">Yes</text>
+
+    <!-- Chrome MCP: Navigate -->
+    <rect x="320" y="770" width="320" height="40" rx="6" fill="#3b82f6" opacity="0.9"/>
+    <text x="480" y="794" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">Chrome MCP: Navigate preview URL</text>
+
+    <!-- Capture -->
+    <rect x="280" y="835" width="400" height="44" rx="6" fill="#3b82f6" opacity="0.85"/>
+    <text x="480" y="853" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">Capture: Screenshot + DOM snapshot + eval</text>
+    <text x="480" y="869" text-anchor="middle" fill="#dbeafe" font-size="10">browser_screenshot | browser_snapshot | browser_eval</text>
+
+    <!-- Arrow -->
+    <line x1="480" y1="810" x2="480" y2="835" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Multimodal Analysis -->
+    <rect x="310" y="905" width="340" height="40" rx="6" fill="#3b82f6" opacity="0.9"/>
+    <text x="480" y="929" text-anchor="middle" fill="#fff" font-size="12" font-weight="500">Multimodal analysis against spec</text>
+
+    <!-- Arrow -->
+    <line x1="480" y1="879" x2="480" y2="905" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Present to Human -->
+    <rect x="300" y="970" width="360" height="44" rx="6" fill="#8b5cf6" opacity="0.9"/>
+    <text x="480" y="988" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Present findings to human</text>
+    <text x="480" y="1004" text-anchor="middle" fill="#ede9fe" font-size="10">Screenshot + Analysis + Route recommendation (PR comment)</text>
+
+    <!-- Arrow -->
+    <line x1="480" y1="945" x2="480" y2="970" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- ============================================ -->
+    <!-- SUBGRAPH: Decision (y: 1040 – 1480)          -->
+    <!-- ============================================ -->
+    <rect x="60" y="1040" width="840" height="460" rx="12" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <text x="80" y="1062" class="subgraph-label" fill="#475569">Human Decision</text>
+
+    <!-- Human Decision diamond -->
+    <polygon points="480,1085 580,1135 480,1185 380,1135" fill="#8b5cf6" opacity="0.9" filter="url(#glow)"/>
+    <text x="480" y="1130" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Human</text>
+    <text x="480" y="1145" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Decision</text>
+
+    <!-- Arrow: Present → Decision -->
+    <line x1="480" y1="1014" x2="480" y2="1085" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+
+    <!-- APPROVED: Merge PR (end) -->
+    <rect x="420" y="1220" width="120" height="44" rx="22" fill="#22c55e" opacity="0.9"/>
+    <text x="480" y="1247" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Merge PR</text>
+
+    <!-- Arrow: Decision → Approved -->
+    <line x1="480" y1="1185" x2="480" y2="1220" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+    <text x="488" y="1205" fill="#22c55e" font-size="10" font-weight="600">Approved</text>
+
+    <!-- VISUAL FEEDBACK: v0 iterate -->
+    <rect x="640" y="1113" width="200" height="44" rx="6" fill="#3b82f6" opacity="0.9"/>
+    <text x="740" y="1131" text-anchor="middle" fill="#fff" font-size="11" font-weight="500">v0 iterate_component</text>
+    <text x="740" y="1147" text-anchor="middle" fill="#dbeafe" font-size="10">(with chatId)</text>
+
+    <!-- Arrow: Decision → Visual -->
+    <line x1="580" y1="1135" x2="640" y2="1135" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+    <text x="595" y="1125" fill="#f59e0b" font-size="10" font-weight="600">Visual</text>
+
+    <!-- LOGIC FEEDBACK: Claude Code -->
+    <rect x="120" y="1113" width="220" height="44" rx="6" fill="#3b82f6" opacity="0.9"/>
+    <text x="230" y="1131" text-anchor="middle" fill="#fff" font-size="11" font-weight="500">Claude Code implementation</text>
+    <text x="230" y="1147" text-anchor="middle" fill="#dbeafe" font-size="10">(direct edit)</text>
+
+    <!-- Arrow: Decision → Logic -->
+    <line x1="380" y1="1135" x2="340" y2="1135" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="350" y="1125" fill="#3b82f6" font-size="10" font-weight="600">Logic</text>
+
+    <!-- Iteration counter decision -->
+    <polygon points="480,1320 550,1350 480,1380 410,1350" fill="#f59e0b" opacity="0.85"/>
+    <text x="480" y="1347" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="600">Iterations</text>
+    <text x="480" y="1360" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="600">&gt; 3?</text>
+
+    <!-- v0 iterate → Iteration check -->
+    <path d="M 740,1157 L 740,1350 L 550,1350" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Claude Code → loop back to Push -->
+    <path d="M 230,1157 L 230,1290 L 110,1290 L 110,440 L 340,440" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+    <text x="120" y="870" fill="#3b82f6" font-size="10" font-weight="500" transform="rotate(-90,120,870)">Loop back to Push</text>
+
+    <!-- Yes: Escalate -->
+    <rect x="580" y="1333" width="250" height="40" rx="6" fill="#ef4444" opacity="0.9"/>
+    <text x="705" y="1357" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Escalate: spec needs revision</text>
+
+    <!-- Arrow: > 3 → Yes -->
+    <line x1="550" y1="1350" x2="580" y2="1350" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+    <text x="560" y="1340" fill="#ef4444" font-size="10" font-weight="600">Yes</text>
+
+    <!-- No: Loop back to Adapt (D7) -->
+    <text x="420" y="1400" fill="#22c55e" font-size="10" font-weight="600">No: Continue</text>
+    <path d="M 480,1380 L 480,1420 L 910,1420 L 910,300 L 650,300" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-green)"/>
+    <text x="918" y="870" fill="#22c55e" font-size="10" font-weight="500" transform="rotate(90,918,870)">Loop back to Adapt (D7)</text>
+
+    <!-- Tool annotations (subtle) -->
+    <text x="720" y="780" fill="#475569" font-size="9" font-style="italic">browser_open</text>
+    <text x="720" y="930" fill="#475569" font-size="9" font-style="italic">Claude multimodal</text>
+    <text x="720" y="995" fill="#475569" font-size="9" font-style="italic">GitHub PR comment</text>
+
+  </svg>
+</body>
+</html>
