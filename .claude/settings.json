@@ -16,7 +16,8 @@
       "mcp__supabase__*",
       "mcp__vercel__*",
       "mcp__linear__*",
-      "mcp__r-btw__*"
+      "mcp__r-btw__*",
+      "mcp__r-session__*"
     ],
     "deny": [
       "Read(.env*)",
@@ -30,13 +31,24 @@
   },
   "enableAllProjectMcpServers": true,
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/context7-reminder.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "[ \"$(git branch --show-current)\" != \"main\" ] || echo 'Warning: On main branch'"
+            "command": "[ \"$(git branch --show-current)\" != \"main\" ] || { echo 'ERROR: Cannot edit on main branch. Create a feature branch first.' >&2; exit 1; }"
           },
           {
             "type": "command",
@@ -46,6 +58,15 @@
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/nextjs15-params-check.sh"
+          }
+        ]
+      },
       {
         "matcher": "Write",
         "hooks": [

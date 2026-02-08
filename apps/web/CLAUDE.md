@@ -98,7 +98,7 @@ All components must include:
 ```typescript
 // app/api/compare/route.ts
 import { streamText } from 'ai';
-import { providers } from '@alignment-comparator/ai';
+import { providers } from '@alteri/ai';
 
 export const runtime = 'edge';
 export const maxDuration = 60;

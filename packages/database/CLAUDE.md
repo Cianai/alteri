@@ -80,7 +80,7 @@ CREATE POLICY "Service role only"
 
 ```typescript
 // Browser client (uses anon key, RLS protected)
-import { supabase } from '@alignment-comparator/database';
+import { supabase } from '@alteri/database';
 
 const { data } = await supabase
   .from('participants')
@@ -88,7 +88,7 @@ const { data } = await supabase
   .eq('pseudonym_id', participantId);
 
 // Server client (uses service role, bypasses RLS)
-import { createServiceClient } from '@alignment-comparator/database';
+import { createServiceClient } from '@alteri/database';
 
 const adminClient = createServiceClient();
 const { data } = await adminClient

@@ -1,0 +1,56 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE/Editor
+.idea/
+.pencil/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+
+
+# Cloud storage (sync folders, not source)
+GoogleDrive/
+OneDrive*/
+My Drive/
+
+# macOS system folders
+Library/
+Applications/
+Desktop/
+Documents/
+Downloads/
+Movies/
+Music/
+Pictures/
+Public/
+Sites/
+
+
+# Container/VM tools
+.orbstack/
+OrbStack/
+.docker/
+
+# AI/ML tools
+.ollama/
+
+# SSH/Security (never index these)
+.ssh/

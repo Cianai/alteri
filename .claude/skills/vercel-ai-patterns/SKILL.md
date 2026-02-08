@@ -40,7 +40,7 @@ export type ProviderKey = keyof typeof providers;
 ```typescript
 // apps/web/app/api/compare/route.ts
 import { streamText } from 'ai';
-import { providers } from '@alignment-comparator/ai';
+import { providers } from '@alteri/ai';
 
 export async function POST(req: Request) {
   const { scenario, framework } = await req.json();

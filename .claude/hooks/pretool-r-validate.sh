@@ -17,9 +17,17 @@ fi
 WARNINGS=""
 
 # Check for stochastic operations without set.seed()
-if grep -qE "(sample|rnorm|runif|rbinom|rpois|boot|bootstrap)" "$FILE_PATH"; then
+# Research scripts (in scripts/ or analysis/) MUST have seeds - block these
+# Other R files just get a warning
+if grep -qE "(sample|rnorm|runif|rbinom|rpois|boot|bootstrap|bootnet|estimateNetwork)" "$FILE_PATH"; then
     if ! grep -q "set.seed" "$FILE_PATH"; then
-        WARNINGS="${WARNINGS}Warning: File contains stochastic operations but no set.seed() for reproducibility\n"
+        if [[ "$FILE_PATH" =~ (scripts|analysis)/.*\.(R|Rmd)$ ]]; then
+            echo "ERROR: Research script contains stochastic operations without set.seed()" >&2
+            echo "Reproducibility requires explicit seed. Add set.seed(42) or similar." >&2
+            exit 1
+        else
+            WARNINGS="${WARNINGS}Warning: File contains stochastic operations but no set.seed() for reproducibility\n"
+        fi
     fi
 fi
 

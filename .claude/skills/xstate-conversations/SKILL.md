@@ -90,7 +90,7 @@ export const conversationMachine = setup({
 
 ```typescript
 import { createActor } from 'xstate';
-import { supabase } from '@alignment-comparator/database';
+import { supabase } from '@alteri/database';
 
 // Save snapshot to Supabase
 async function persistSnapshot(sessionId: string, actor: ReturnType<typeof createActor>) {
