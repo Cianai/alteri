@@ -9,7 +9,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.14",
+    "@ai-sdk/anthropic": "^3.0.42",
     "ai": "^6.0.37"
   },
   "devDependencies": {
