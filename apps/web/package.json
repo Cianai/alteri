@@ -13,6 +13,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.14",
     "@ai-sdk/openai": "^3.0.11",
+    "@alteri/agent-session": "workspace:*",
     "@alteri/shared": "workspace:*",
     "@alteri/state-machines": "workspace:*",
     "@alteri/voice-intake": "workspace:*",
