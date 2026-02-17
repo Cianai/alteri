@@ -102,11 +102,3 @@ export type DispatchTarget =
   | { type: 'webhook'; url: string }
   | { type: 'inline' }
 
-// --- Handler Result ---
-
-export interface HandlerResult {
-  acknowledged: boolean
-  sessionId: string
-  intent: ParsedIntent
-  dispatchedTo: DispatchTarget | null
-}

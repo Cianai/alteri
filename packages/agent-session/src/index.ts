@@ -21,5 +21,4 @@ export type {
   DispatchTarget,
   IntentType,
   ParsedIntent,
-  HandlerResult,
 } from './types'
