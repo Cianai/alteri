@@ -1,0 +1,5 @@
+{
+  "postClone": ["pnpm install"],
+  "prePush": ["pnpm typecheck", "pnpm lint", "pnpm test"],
+  "autoFix": true
+}
