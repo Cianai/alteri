@@ -19,8 +19,8 @@ function classifyIntent(text: string): IntentType {
 }
 
 export function parseIntent(text: string): ParsedIntent {
-  const rawText = text
-  const trimmed = text.trim()
+  const rawText = text ?? ''
+  const trimmed = rawText.trim()
 
   const mentionMatch = trimmed.match(MENTION_REGEX)
   const agentMention = mentionMatch ? mentionMatch[1] : ''

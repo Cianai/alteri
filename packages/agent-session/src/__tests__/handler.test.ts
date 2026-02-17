@@ -206,4 +206,95 @@ describe('handleAgentSession', () => {
     expect(result.body.intent).toBeDefined()
     expect(result.body.acknowledged).toBe(true)
   })
+
+  it('ignores unknown action types gracefully', async () => {
+    const event = {
+      ...makeEvent(),
+      action: 'updated',
+    }
+    const body = JSON.stringify(event)
+    const signature = sign(body)
+
+    const result = await handleAgentSession({
+      rawBody: body,
+      signature,
+      secret: TEST_SECRET,
+      token: TEST_TOKEN,
+      fetchFn: fetchSpy,
+      dispatchFn: dispatchSpy,
+    })
+
+    expect(result.status).toBe(200)
+    expect(result.body.error).toContain('Ignoring action')
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
+  it('handles missing agentSession in payload', async () => {
+    const event = {
+      action: 'created',
+      type: 'AgentSession',
+      createdAt: new Date().toISOString(),
+      webhookTimestamp: Date.now(),
+      webhookId: 'wh-789',
+      url: 'https://linear.app/test',
+      actor: { id: 'user-1', type: 'user', name: 'Cian', email: 'cian@test.com' },
+      agentSession: null,
+    }
+    const body = JSON.stringify(event)
+    const signature = sign(body)
+
+    const result = await handleAgentSession({
+      rawBody: body,
+      signature,
+      secret: TEST_SECRET,
+      token: TEST_TOKEN,
+      fetchFn: fetchSpy,
+      dispatchFn: dispatchSpy,
+    })
+
+    expect(result.status).toBe(200)
+    expect(result.body.error).toContain('Missing agentSession')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('posts ack thought with ephemeral as top-level field', async () => {
+    const event = makeEvent('@claude status')
+    const body = JSON.stringify(event)
+    const signature = sign(body)
+
+    await handleAgentSession({
+      rawBody: body,
+      signature,
+      secret: TEST_SECRET,
+      token: TEST_TOKEN,
+      fetchFn: fetchSpy,
+      dispatchFn: dispatchSpy,
+    })
+
+    const callBody = JSON.parse(fetchSpy.mock.calls[0][1].body)
+    // ephemeral must be at input level, NOT inside content
+    expect(callBody.variables.input.ephemeral).toBe(true)
+    expect(callBody.variables.input.content.ephemeral).toBeUndefined()
+  })
+
+  it('handles null comment body in created event', async () => {
+    const event = makeEvent()
+    event.agentSession.comment = null
+    const body = JSON.stringify(event)
+    const signature = sign(body)
+
+    const result = await handleAgentSession({
+      rawBody: body,
+      signature,
+      secret: TEST_SECRET,
+      token: TEST_TOKEN,
+      fetchFn: fetchSpy,
+      dispatchFn: dispatchSpy,
+    })
+
+    expect(result.status).toBe(200)
+    // Should still parse intent (as 'unknown') and dispatch
+    expect(dispatchSpy).toHaveBeenCalledOnce()
+  })
 })

@@ -17,7 +17,7 @@ on:
         type: string
       prompt_context:
         description: 'Prompt context XML from Linear'
-        required: true
+        required: false
         type: string
       prompt_body:
         description: 'Prompt body (for prompted events)'
@@ -67,13 +67,16 @@ jobs:
               const promptContext = process.env.PROMPT_CONTEXT ?? '';
               const commentBody = process.env.PROMPT_BODY ?? '';
 
+              console.log('[worker] starting', { sessionId, intent, issueId, hasToken: !!token });
+
               const client = new LinearAgentClient(token);
 
               // Post thinking activity
-              await client.postActivity(sessionId, {
+              const thoughtResult = await client.postActivity(sessionId, {
                 type: 'thought',
                 body: 'Processing ' + intent + ' request for ' + issueId + '...',
               });
+              console.log('[worker] thought result:', JSON.stringify(thoughtResult));
 
               // Route to handler
               const response = await routeIntent(
@@ -87,22 +90,25 @@ jobs:
                 },
                 client,
               );
+              console.log('[worker] handler response length:', response?.length ?? 0);
 
               // Post response
               const result = await client.postActivity(sessionId, {
                 type: 'response',
                 body: response,
               });
+              console.log('[worker] response result:', JSON.stringify(result));
 
               if (!result.success) {
-                console.error('Failed to post response:', result.error);
-                await client.postActivity(sessionId, {
+                console.error('[worker] Failed to post response:', result.error);
+                const errResult = await client.postActivity(sessionId, {
                   type: 'error',
                   body: 'Failed to generate response: ' + (result.error ?? 'unknown error'),
                 });
+                console.log('[worker] error activity result:', JSON.stringify(errResult));
                 process.exit(1);
               }
 
-              console.log('Successfully processed session', sessionId, '(intent:', intent + ')');
+              console.log('[worker] Successfully processed session', sessionId, '(intent:', intent + ')');
             })();
           "

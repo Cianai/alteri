@@ -136,6 +136,7 @@ export class LinearAgentClient {
   async postActivity(
     sessionId: string,
     content: ActivityContent,
+    options?: { ephemeral?: boolean },
   ): Promise<PostActivityResult> {
     const result = await this.graphql<{
       agentActivityCreate?: { success: boolean; agentActivity?: { id: string } }
@@ -143,6 +144,7 @@ export class LinearAgentClient {
       input: {
         agentSessionId: sessionId,
         content,
+        ...(options?.ephemeral != null ? { ephemeral: options.ephemeral } : {}),
       },
     })
 

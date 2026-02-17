@@ -27,6 +27,13 @@ export async function POST(request: NextRequest) {
         return
       }
 
+      console.log('[agent-session] dispatching', {
+        sessionId: args.sessionId,
+        intent: args.intent.type,
+        issueId: args.issue.identifier,
+        hasPromptContext: !!args.promptContext,
+      })
+
       const response = await fetch(
         'https://api.github.com/repos/cianos95-dev/alteri/actions/workflows/agent-session-worker.yml/dispatches',
         {
@@ -41,7 +48,7 @@ export async function POST(request: NextRequest) {
               session_id: args.sessionId,
               intent_type: args.intent.type,
               issue_id: args.issue.identifier,
-              prompt_context: args.promptContext,
+              prompt_context: args.promptContext || 'none',
               ...(args.promptBody ? { prompt_body: args.promptBody } : {}),
             },
           }),
@@ -54,6 +61,8 @@ export async function POST(request: NextRequest) {
           `[agent-session] GitHub dispatch failed: ${response.status} ${response.statusText}`,
           body,
         )
+      } else {
+        console.log('[agent-session] dispatch succeeded:', response.status)
       }
     },
   })

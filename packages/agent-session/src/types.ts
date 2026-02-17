@@ -73,7 +73,6 @@ export interface ActivityContent {
   action?: string
   parameter?: string
   result?: string
-  ephemeral?: boolean
 }
 
 // --- Intent Parser ---

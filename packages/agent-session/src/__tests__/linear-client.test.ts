@@ -125,7 +125,7 @@ describe('LinearAgentClient', () => {
     expect(result.error).toContain('Session not found')
   })
 
-  it('supports ephemeral activities', async () => {
+  it('supports ephemeral as top-level input field', async () => {
     fetchSpy.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -134,11 +134,32 @@ describe('LinearAgentClient', () => {
     })
 
     const client = new LinearAgentClient(MOCK_TOKEN, fetchSpy)
-    const activity: ActivityContent = { type: 'thought', body: 'Thinking...', ephemeral: true }
+    const activity: ActivityContent = { type: 'thought', body: 'Thinking...' }
+
+    await client.postActivity(SESSION_ID, activity, { ephemeral: true })
+
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body)
+    // ephemeral must be at input level, NOT nested inside content
+    expect(body.variables.input.ephemeral).toBe(true)
+    expect(body.variables.input.content.ephemeral).toBeUndefined()
+    expect(body.variables.input.content.type).toBe('thought')
+    expect(body.variables.input.content.body).toBe('Thinking...')
+  })
+
+  it('omits ephemeral field when not specified', async () => {
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: { agentActivityCreate: { success: true, agentActivity: { id: 'act-5' } } },
+      }),
+    })
+
+    const client = new LinearAgentClient(MOCK_TOKEN, fetchSpy)
+    const activity: ActivityContent = { type: 'thought', body: 'Regular thought' }
 
     await client.postActivity(SESSION_ID, activity)
 
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body)
-    expect(body.variables.input.content.ephemeral).toBe(true)
+    expect(body.variables.input.ephemeral).toBeUndefined()
   })
 })
