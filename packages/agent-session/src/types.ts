@@ -87,6 +87,16 @@ export interface ParsedIntent {
   remainingText: string
 }
 
+// --- Handler Context ---
+
+export interface HandlerContext {
+  sessionId: string
+  issueId: string
+  issueIdentifier: string
+  promptContext: string
+  commentBody: string
+}
+
 // --- Agent Registry ---
 
 export interface AgentConfig {
