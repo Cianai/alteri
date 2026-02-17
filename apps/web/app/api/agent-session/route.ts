@@ -65,9 +65,11 @@ export async function POST(request: NextRequest) {
   // next/server after() keeps the Edge function alive until this completes,
   // preventing the unawaited fetch from being silently dropped.
   if (pendingDispatch) {
+    const dispatchArgs = pendingDispatch
+
     after(async () => {
       try {
-        await dispatchToWorker(pendingDispatch!)
+        await dispatchToWorker(dispatchArgs)
       } catch {
         // Best effort — dispatch failure shouldn't surface to Linear
       }
