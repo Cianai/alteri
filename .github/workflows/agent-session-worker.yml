@@ -56,8 +56,8 @@ jobs:
           PROMPT_BODY: ${{ inputs.prompt_body }}
         run: |
           pnpm --filter @alteri/agent-session exec tsx -e "
-            import { LinearAgentClient } from './src/linear-client.js';
-            import { routeIntent } from './src/handlers/index.js';
+            import { LinearAgentClient } from './src/linear-client.ts';
+            import { routeIntent } from './src/handlers/index.ts';
 
             (async () => {
               const token = process.env.LINEAR_AGENT_TOKEN;
