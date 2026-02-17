@@ -51,37 +51,58 @@ jobs:
       - name: Process agent session
         env:
           LINEAR_AGENT_TOKEN: ${{ secrets.LINEAR_AGENT_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SESSION_ID: ${{ inputs.session_id }}
           INTENT: ${{ inputs.intent_type }}
           ISSUE_ID: ${{ inputs.issue_id }}
           PROMPT_CONTEXT: ${{ inputs.prompt_context }}
           PROMPT_BODY: ${{ inputs.prompt_body }}
         run: |
-          echo "Processing session $SESSION_ID (intent: $INTENT, issue: $ISSUE_ID)"
+          pnpm --filter @alteri/agent-session exec tsx -e "
+            import { LinearAgentClient } from './src/linear-client.js';
+            import { routeIntent } from './src/handlers/index.js';
 
-          # Post a thought to Linear indicating processing has started
-          jq -n \
-            --arg sid "$SESSION_ID" \
-            --arg intent "$INTENT" \
-            --arg issue "$ISSUE_ID" \
-            '{query: "mutation($input: AgentActivityCreateInput!) { agentActivityCreate(input: $input) { success } }", variables: {input: {agentSessionId: $sid, content: {type: "thought", body: ("Processing " + $intent + " request for " + $issue + "...")}}}}' \
-          | curl -s -X POST https://api.linear.app/graphql \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $LINEAR_AGENT_TOKEN" \
-            -d @-
+            const token = process.env.LINEAR_AGENT_TOKEN;
+            const sessionId = process.env.SESSION_ID;
+            const intent = process.env.INTENT;
+            const issueId = process.env.ISSUE_ID;
+            const promptContext = process.env.PROMPT_CONTEXT ?? '';
+            const commentBody = process.env.PROMPT_BODY ?? '';
 
-          # TODO: Phase 1C — invoke Claude Code or AI SDK to generate
-          # the actual response based on intent type and issue context.
-          # For now, post a placeholder response.
-          jq -n \
-            --arg sid "$SESSION_ID" \
-            --arg intent "$INTENT" \
-            --arg issue "$ISSUE_ID" \
-            '{query: "mutation($input: AgentActivityCreateInput!) { agentActivityCreate(input: $input) { success } }", variables: {input: {agentSessionId: $sid, content: {type: "response", body: ("I received your **" + $intent + "** request for " + $issue + ". Full AI-powered responses are coming in Phase 1C.")}}}}' \
-          | curl -s -X POST https://api.linear.app/graphql \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $LINEAR_AGENT_TOKEN" \
-            -d @-
+            const client = new LinearAgentClient(token);
 
-          echo "Done processing session $SESSION_ID"
+            // Post thinking activity
+            await client.postActivity(sessionId, {
+              type: 'thought',
+              body: 'Processing ' + intent + ' request for ' + issueId + '...',
+            });
+
+            // Route to handler
+            const response = await routeIntent(
+              intent,
+              {
+                sessionId,
+                issueId,
+                issueIdentifier: issueId,
+                promptContext,
+                commentBody,
+              },
+              client,
+            );
+
+            // Post response
+            const result = await client.postActivity(sessionId, {
+              type: 'response',
+              body: response,
+            });
+
+            if (!result.success) {
+              console.error('Failed to post response:', result.error);
+              await client.postActivity(sessionId, {
+                type: 'error',
+                body: 'Failed to generate response: ' + (result.error ?? 'unknown error'),
+              });
+              process.exit(1);
+            }
+
+            console.log('Successfully processed session', sessionId, '(intent:', intent + ')');
+          "

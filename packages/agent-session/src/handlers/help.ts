@@ -1,0 +1,25 @@
+export function handleHelp(): string {
+  return [
+    '**Claude Agent — Available Commands**',
+    '',
+    'Mention `@claude` in a comment with one of these intents:',
+    '',
+    '| Intent | Example | What it does |',
+    '|--------|---------|-------------|',
+    '| **status** | `@claude status` | Shows issue status, sub-issues, linked PRs, and recent activity |',
+    '| **expand** | `@claude expand this` | Analyzes the issue and suggests acceptance criteria, edge cases, and technical considerations |',
+    '| **help** | `@claude help` | Shows this message |',
+    '',
+    '### Tips',
+    '',
+    '- You can also use natural language: `@claude where are we on this?` maps to **status**',
+    '- Keywords like `spec`, `flesh out`, `elaborate`, `detail` all map to **expand**',
+    '- Follow-up messages in the same thread continue the conversation',
+    '',
+    '### Handoff Patterns',
+    '',
+    '- **Delegate** (primary): Use the Delegate field to hand issue ownership to an agent',
+    '- **@mention** (secondary): Mention an agent in a comment for parallel notification',
+    '- Delegation transfers active ownership; @mention is advisory only',
+  ].join('\n')
+}
