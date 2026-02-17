@@ -145,10 +145,6 @@ export async function POST(request: NextRequest) {
     switch (intent.type) {
       case 'status':
         await handleStatus(intent, accessToken)
-        // Capture time to first activity (emitted within handleStatus)
-        if (log.first_activity_ms === null) {
-          log.first_activity_ms = Date.now() - startTime
-        }
         break
 
       case 'expand': {
@@ -156,19 +152,11 @@ export async function POST(request: NextRequest) {
         const ghRepo = process.env.GITHUB_REPO ?? 'cianosullivan/alteri'
         if (!ghToken) {
           await emitError(intent.sessionId, 'GitHub token not configured.', accessToken)
-          // Capture time to first activity (emitError)
-          if (log.first_activity_ms === null) {
-            log.first_activity_ms = Date.now() - startTime
-          }
           log.processing_status = 'failed'
           log.error_message = 'GITHUB_TOKEN not configured'
           break
         }
         const result = await handleExpand(intent, accessToken, ghToken, ghRepo)
-        // Capture time to first activity (emitted within handleExpand)
-        if (log.first_activity_ms === null) {
-          log.first_activity_ms = Date.now() - startTime
-        }
         log.github_dispatch_triggered = result.dispatched
         break
       }
@@ -177,13 +165,13 @@ export async function POST(request: NextRequest) {
       case 'unknown':
       default:
         await handleHelp(intent, accessToken)
-        // Capture time to first activity (emitted within handleHelp)
-        if (log.first_activity_ms === null) {
-          log.first_activity_ms = Date.now() - startTime
-        }
         break
     }
 
+    // Capture time to first activity (all handlers emit at least one activity)
+    if (log.first_activity_ms === null) {
+      log.first_activity_ms = Date.now() - startTime
+    }
     log.processing_status = 'completed'
   } catch (err) {
     log.processing_status = 'failed'
@@ -196,7 +184,7 @@ export async function POST(request: NextRequest) {
         'An unexpected error occurred. Please try again.',
         accessToken,
       )
-      // Capture time to first activity (emitError in catch block)
+      // Capture time to first activity if not already captured
       if (log.first_activity_ms === null) {
         log.first_activity_ms = Date.now() - startTime
       }
