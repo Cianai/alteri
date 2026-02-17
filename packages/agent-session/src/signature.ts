@@ -62,14 +62,17 @@ function bufferToHex(buffer: ArrayBuffer): string {
 
 /**
  * Constant-time string comparison to prevent timing attacks.
- * Compares every character regardless of match (no early return).
+ * Compares every character regardless of match (no early return),
+ * and incorporates length differences into the comparison.
  */
 function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
+  const len = Math.max(a.length, b.length)
+  let mismatch = a.length ^ b.length
 
-  let mismatch = 0
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  for (let i = 0; i < len; i++) {
+    const aCode = i < a.length ? a.charCodeAt(i) : 0
+    const bCode = i < b.length ? b.charCodeAt(i) : 0
+    mismatch |= aCode ^ bCode
   }
   return mismatch === 0
 }
