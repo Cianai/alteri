@@ -61,11 +61,11 @@ jobs:
           echo "Processing session $SESSION_ID (intent: $INTENT, issue: $ISSUE_ID)"
 
           # Post a thought to Linear indicating processing has started
+          THOUGHT_BODY="Processing $INTENT request for $ISSUE_ID..."
           jq -n \
             --arg sid "$SESSION_ID" \
-            --arg intent "$INTENT" \
-            --arg issue "$ISSUE_ID" \
-            '{query: "mutation($input: AgentActivityCreateInput!) { agentActivityCreate(input: $input) { success } }", variables: {input: {agentSessionId: $sid, content: {type: "thought", body: ("Processing " + $intent + " request for " + $issue + "...")}}}}' \
+            --arg body "$THOUGHT_BODY" \
+            '{query: "mutation($input: AgentActivityCreateInput!) { agentActivityCreate(input: $input) { success } }", variables: {input: {agentSessionId: $sid, content: {type: "thought", body: $body}}}}' \
           | curl -s -X POST https://api.linear.app/graphql \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $LINEAR_AGENT_TOKEN" \
@@ -74,11 +74,11 @@ jobs:
           # TODO: Phase 1C — invoke Claude Code or AI SDK to generate
           # the actual response based on intent type and issue context.
           # For now, post a placeholder response.
+          RESPONSE_BODY="I received your **$INTENT** request for $ISSUE_ID. Full AI-powered responses are coming in Phase 1C."
           jq -n \
             --arg sid "$SESSION_ID" \
-            --arg intent "$INTENT" \
-            --arg issue "$ISSUE_ID" \
-            '{query: "mutation($input: AgentActivityCreateInput!) { agentActivityCreate(input: $input) { success } }", variables: {input: {agentSessionId: $sid, content: {type: "response", body: ("I received your **" + $intent + "** request for " + $issue + ". Full AI-powered responses are coming in Phase 1C.")}}}}' \
+            --arg body "$RESPONSE_BODY" \
+            '{query: "mutation($input: AgentActivityCreateInput!) { agentActivityCreate(input: $input) { success } }", variables: {input: {agentSessionId: $sid, content: {type: "response", body: $body}}}}' \
           | curl -s -X POST https://api.linear.app/graphql \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $LINEAR_AGENT_TOKEN" \

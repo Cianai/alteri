@@ -24,26 +24,40 @@ export async function POST(request: NextRequest) {
       const ghToken = process.env.GITHUB_TOKEN
       if (!ghToken) return
 
-      await fetch(
-        'https://api.github.com/repos/cianos95-dev/alteri/actions/workflows/agent-session-worker.yml/dispatches',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${ghToken}`,
-            Accept: 'application/vnd.github.v3+json',
-          },
-          body: JSON.stringify({
-            ref: 'main',
-            inputs: {
-              session_id: args.sessionId,
-              intent_type: args.intent.type,
-              issue_id: args.issue.identifier,
-              prompt_context: args.promptContext,
-              ...(args.promptBody ? { prompt_body: args.promptBody } : {}),
+      try {
+        const response = await fetch(
+          'https://api.github.com/repos/cianos95-dev/alteri/actions/workflows/agent-session-worker.yml/dispatches',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${ghToken}`,
+              Accept: 'application/vnd.github.v3+json',
             },
-          }),
-        },
-      )
+            body: JSON.stringify({
+              ref: 'main',
+              inputs: {
+                session_id: args.sessionId,
+                intent_type: args.intent.type,
+                issue_id: args.issue.identifier,
+                prompt_context: args.promptContext,
+                ...(args.promptBody ? { prompt_body: args.promptBody } : {}),
+              },
+            }),
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            `GitHub workflow dispatch failed with status ${response.status} ${response.statusText}`,
+          )
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error
+        }
+
+        throw new Error('GitHub workflow dispatch failed')
+      }
     },
   })
 
