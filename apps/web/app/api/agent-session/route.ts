@@ -15,6 +15,12 @@ export async function POST(request: NextRequest) {
 
   const rawBody = await request.text()
 
+  // Only process actions we handle — Linear also sends 'updated', 'completed', etc.
+  const { action } = JSON.parse(rawBody)
+  if (action !== 'created' && action !== 'prompted') {
+    return Response.json({ ignored: action }, { status: 200 })
+  }
+
   const result = await handleAgentSession({
     rawBody,
     signature,

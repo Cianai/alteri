@@ -17,7 +17,7 @@ on:
         type: string
       prompt_context:
         description: 'Prompt context XML from Linear'
-        required: true
+        required: false
         type: string
       prompt_body:
         description: 'Prompt body (for prompted events)'
