@@ -59,48 +59,50 @@ jobs:
             import { LinearAgentClient } from './src/linear-client.js';
             import { routeIntent } from './src/handlers/index.js';
 
-            const token = process.env.LINEAR_AGENT_TOKEN;
-            const sessionId = process.env.SESSION_ID;
-            const intent = process.env.INTENT;
-            const issueId = process.env.ISSUE_ID;
-            const promptContext = process.env.PROMPT_CONTEXT ?? '';
-            const commentBody = process.env.PROMPT_BODY ?? '';
+            (async () => {
+              const token = process.env.LINEAR_AGENT_TOKEN;
+              const sessionId = process.env.SESSION_ID;
+              const intent = process.env.INTENT;
+              const issueId = process.env.ISSUE_ID;
+              const promptContext = process.env.PROMPT_CONTEXT ?? '';
+              const commentBody = process.env.PROMPT_BODY ?? '';
 
-            const client = new LinearAgentClient(token);
+              const client = new LinearAgentClient(token);
 
-            // Post thinking activity
-            await client.postActivity(sessionId, {
-              type: 'thought',
-              body: 'Processing ' + intent + ' request for ' + issueId + '...',
-            });
-
-            // Route to handler
-            const response = await routeIntent(
-              intent,
-              {
-                sessionId,
-                issueId,
-                issueIdentifier: issueId,
-                promptContext,
-                commentBody,
-              },
-              client,
-            );
-
-            // Post response
-            const result = await client.postActivity(sessionId, {
-              type: 'response',
-              body: response,
-            });
-
-            if (!result.success) {
-              console.error('Failed to post response:', result.error);
+              // Post thinking activity
               await client.postActivity(sessionId, {
-                type: 'error',
-                body: 'Failed to generate response: ' + (result.error ?? 'unknown error'),
+                type: 'thought',
+                body: 'Processing ' + intent + ' request for ' + issueId + '...',
               });
-              process.exit(1);
-            }
 
-            console.log('Successfully processed session', sessionId, '(intent:', intent + ')');
+              // Route to handler
+              const response = await routeIntent(
+                intent,
+                {
+                  sessionId,
+                  issueId,
+                  issueIdentifier: issueId,
+                  promptContext,
+                  commentBody,
+                },
+                client,
+              );
+
+              // Post response
+              const result = await client.postActivity(sessionId, {
+                type: 'response',
+                body: response,
+              });
+
+              if (!result.success) {
+                console.error('Failed to post response:', result.error);
+                await client.postActivity(sessionId, {
+                  type: 'error',
+                  body: 'Failed to generate response: ' + (result.error ?? 'unknown error'),
+                });
+                process.exit(1);
+              }
+
+              console.log('Successfully processed session', sessionId, '(intent:', intent + ')');
+            })();
           "
