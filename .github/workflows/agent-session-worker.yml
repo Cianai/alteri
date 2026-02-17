@@ -1,0 +1,78 @@
+name: Agent Session Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: 'Linear agent session ID'
+        required: true
+        type: string
+      intent_type:
+        description: 'Parsed intent type (status, expand, help, unknown)'
+        required: true
+        type: string
+      issue_id:
+        description: 'Linear issue identifier (e.g. CIA-123)'
+        required: true
+        type: string
+      prompt_context:
+        description: 'Prompt context XML from Linear'
+        required: true
+        type: string
+      prompt_body:
+        description: 'Prompt body (for prompted events)'
+        required: false
+        type: string
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Process agent session
+        env:
+          LINEAR_AGENT_TOKEN: ${{ secrets.LINEAR_AGENT_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          SESSION_ID="${{ inputs.session_id }}"
+          INTENT="${{ inputs.intent_type }}"
+          ISSUE_ID="${{ inputs.issue_id }}"
+
+          echo "Processing session $SESSION_ID (intent: $INTENT, issue: $ISSUE_ID)"
+
+          # Post a thought to Linear indicating processing has started
+          curl -s -X POST https://api.linear.app/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $LINEAR_AGENT_TOKEN" \
+            -d "{\"query\": \"mutation { agentActivityCreate(input: { agentSessionId: \\\"$SESSION_ID\\\", type: thought, body: \\\"Processing $INTENT request for $ISSUE_ID...\\\" }) { success } }\"}"
+
+          # TODO: Phase 1C — invoke Claude Code or AI SDK to generate
+          # the actual response based on intent type and issue context.
+          # For now, post a placeholder response.
+          RESPONSE_BODY="I received your **$INTENT** request for $ISSUE_ID. Full AI-powered responses are coming in Phase 1C."
+
+          curl -s -X POST https://api.linear.app/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $LINEAR_AGENT_TOKEN" \
+            -d "{\"query\": \"mutation { agentActivityCreate(input: { agentSessionId: \\\"$SESSION_ID\\\", type: response, body: \\\"$RESPONSE_BODY\\\" }) { success } }\"}"
+
+          echo "Done processing session $SESSION_ID"

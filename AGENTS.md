@@ -86,6 +86,85 @@ pnpm lint
 | E2E tests | `apps/web/e2e/` | Playwright |
 | R analysis tests | `packages/r-analysis/tests/` | testthat |
 
+## PR Integration Triad — Actor Roles
+
+The PR lifecycle involves multiple automated actors alongside human reviewers. This section documents who does what. For the plumbing layer (data flows, configuration), see `CONNECTORS.md`.
+
+### Actors in the PR Flow
+
+| Actor | Role | Trigger | What They Do |
+|-------|------|---------|--------------|
+| **Claude Code** | Author | Manual (human starts session) | Writes code, creates branch, opens PR with `Closes CIA-XXX`, addresses review feedback |
+| **GitHub Copilot** | Automated Reviewer | PR opened/updated (automatic) | Structural review: security, bugs, dead code, style. Posts overview + inline comments |
+| **Vercel Bot** | Automated Deployer | PR opened/push (automatic) | Deploys preview, posts URL as PR comment, runs deployment checks |
+| **Linear Bot** | Issue Tracker | PR branch name or body match | Links PR to issue, auto-closes issue on merge |
+| **Cian** | Human Reviewer | PR ready for review | Final approval gate. Reviews code + Copilot findings + Vercel preview |
+| **Cursor** | Secondary Reviewer | Manual (Cian opens PR in Cursor) | On-demand code review with project context. Not automated — Cian drives |
+
+### Current Workflow (as practiced)
+
+```
+1. Claude Code creates branch (claude/cia-XXX-description)
+2. Claude Code implements, commits, pushes
+3. Claude Code opens PR with "Closes CIA-XXX" in body
+   ├── Copilot auto-reviews (1-3 min) → inline comments + overview
+   ├── Vercel auto-deploys preview (2-5 min) → preview URL comment
+   └── Linear auto-links PR to CIA-XXX
+4. Cian reviews:
+   a. Reads Copilot findings first (triage: fix-now / fix-forward / dismiss)
+   b. Clicks Vercel preview URL for visual verification
+   c. Optionally opens in Cursor for deeper review
+   d. Approves or requests changes
+5. If changes requested:
+   a. Claude Code addresses feedback (same branch)
+   b. Copilot re-reviews updated files
+   c. Vercel re-deploys preview
+   d. Cian re-reviews
+6. Cian merges PR
+   ├── Vercel deploys to production
+   ├── Linear auto-closes CIA-XXX (if Closes tag present)
+   └── Claude Code posts closing comment (per Stage 7.5 rules)
+```
+
+### What's Manual vs Automated
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Branch creation | **Automated** (Claude Code) | Branch naming convention: `claude/cia-XXX-*` |
+| PR creation | **Automated** (Claude Code) | Includes `Closes CIA-XXX` in body |
+| Code review (Copilot) | **Automated** | Triggers on every PR, no setup per-PR |
+| Preview deploy (Vercel) | **Automated** | Triggers on every push to PR branch |
+| Issue linking (Linear) | **Automated** | Via branch name or PR body |
+| Human review | **Manual** | Cian reviews PR, Copilot findings, preview |
+| Cursor review | **Manual** | Cian optionally opens PR in Cursor |
+| Feedback addressing | **Manual trigger** (Claude Code session) | Claude addresses review comments |
+| Merge | **Manual** | Cian clicks merge |
+| Issue closure | **Automated** (Linear) | On merge, if `Closes CIA-XXX` present |
+| Closing comment | **Automated** (Claude Code) | Per Stage 7.5 rules |
+
+### Copilot Finding Triage Rules
+
+When Copilot posts review findings, triage each into one of three categories:
+
+| Category | Action | When |
+|----------|--------|------|
+| **Fix-now** | Address before merge | Security issues, bugs, broken functionality |
+| **Fix-forward** | Create sub-issue in Linear | Style improvements, refactoring opportunities, non-blocking |
+| **Dismiss** | Comment with rationale | False positives, intentional patterns, out of scope |
+
+**Rule:** Never merge with unaddressed fix-now items. Fix-forward items get `type:chore` sub-issues linked to the parent.
+
+### Automation Opportunities (Not Yet Implemented)
+
+| Opportunity | Tool | Effort | Value |
+|-------------|------|--------|-------|
+| `.github/instructions/review.instructions.md` | Copilot | Low | Custom review context reduces false positives |
+| BugBot auto-review | Cursor ($40/mo) | Medium | Second AI reviewer, multi-model diversity |
+| n8n PR aggregation workflow | n8n | Medium | Consolidate bot outputs into single Linear comment |
+| `@copilot` as issue assignee | GitHub Copilot agent | Low | Copilot implements fix-forward items autonomously |
+
+---
+
 ## Spec-Driven Development
 
 Specifications in `docs/specs/` have passed adversarial review and contain:
