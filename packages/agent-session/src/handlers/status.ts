@@ -65,7 +65,8 @@ export async function handleStatus(
     for (const comment of comments) {
       const date = new Date(comment.createdAt).toISOString().slice(0, 10)
       const snippet = comment.body.slice(0, 120).replace(/\n/g, ' ')
-      lines.push(`- **${comment.user.name}** (${date}): ${snippet}${comment.body.length > 120 ? '...' : ''}`)
+      const author = comment.user?.name ?? 'Bot'
+      lines.push(`- **${author}** (${date}): ${snippet}${comment.body.length > 120 ? '...' : ''}`)
     }
   }
 

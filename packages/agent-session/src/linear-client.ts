@@ -84,7 +84,7 @@ export interface IssueStatusData {
     nodes: {
       body: string
       createdAt: string
-      user: { name: string }
+      user: { name: string } | null
     }[]
   }
 }
