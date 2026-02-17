@@ -78,7 +78,7 @@ export async function handleAgentSession(
     // Swallow ack failures — we must return 200 to Linear
   })
 
-  // 6. Dispatch async work (fire and forget in edge context)
+  // 6. Dispatch async work — awaited so Edge function stays alive for the fetch
   if (dispatchFn) {
     const dispatchArgs: DispatchArgs = {
       sessionId,
@@ -89,9 +89,12 @@ export async function handleAgentSession(
     if (event.action === 'prompted') {
       dispatchArgs.promptBody = event.agentActivity.body
     }
-    dispatchFn(dispatchArgs).catch(() => {
-      // Best effort dispatch
-    })
+    try {
+      await dispatchFn(dispatchArgs)
+    } catch (err) {
+      // Best effort — dispatch failure shouldn't prevent 200 response
+      console.error('[agent-session] dispatch failed:', err)
+    }
   }
 
   // 7. Return 200 immediately (within 5s deadline)
