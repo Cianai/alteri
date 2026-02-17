@@ -30,7 +30,7 @@ jobs:
 
       - name: Create challenger review issue
         if: steps.specs.outputs.files != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.issues.create({
@@ -46,7 +46,7 @@ jobs:
 
       - name: Create security review issue
         if: steps.specs.outputs.files != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.issues.create({
@@ -62,7 +62,7 @@ jobs:
 
       - name: Create devil's advocate issue
         if: steps.specs.outputs.files != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.issues.create({
