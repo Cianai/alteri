@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.44",
+    "@ai-sdk/anthropic": "^3.0.45",
     "@ai-sdk/openai": "^3.0.29",
     "@alteri/agent-session": "workspace:*",
     "@alteri/shared": "workspace:*",
@@ -30,11 +30,11 @@
     "@radix-ui/react-tabs": "^1.1.0",
     "@react-pdf/renderer": "^4.3.2",
     "@xstate/react": "^6.0.0",
-    "ai": "^6.0.86",
+    "ai": "^6.0.90",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
-    "framer-motion": "^12.34.0",
-    "lucide-react": "^0.570.0",
+    "framer-motion": "^12.34.1",
+    "lucide-react": "^0.574.0",
     "next": "^15.5.11",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
