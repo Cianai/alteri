@@ -1,6 +1,7 @@
 {
   "_meta": {
     "description": "Alteri dependency inventory - strategic tracking beyond lock files",
+    "_deprecated": "2026-02-25. Replaced by claude-command-centre/.github/monitored-repos.yml (46 repos, 3 tiers, GitHub Actions monitoring). This file kept for reference only.",
     "categories": {
       "active": "In production use (installed in package.json/renv.lock)",
       "evaluating": "Trialling or POC stage",
