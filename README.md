@@ -7,7 +7,6 @@ A multi-component research platform for mapping human connection patterns — AI
 Alteri combines several research streams into a unified platform:
 
 - **AI Alignment Framework Comparison** — Interactive tool comparing three AI alignment philosophies (Microsoft HSI, Anthropic Constitutional AI, Hybrid) in mental health contexts
-- **Limerence & Attachment Research** — Network-based analysis of romantic attachment patterns using multilevel modelling
 - **Social Network Analysis** — Ego-network mapping with R-based psychometric analysis (371+ packages)
 - **Buddhist Ethics Evaluation** — Contemplative framework integration for therapeutic honesty
 
